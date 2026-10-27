@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FMS-20045 Branch Filter Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--nav:#213f86;--nav2:#1b3476;--navtxt:#e8edf9;--navact:#5cc8ff;--ink:#1a1f2e;--mut:#6b7280;--line:#e6e9ef;--bg:#f5f6f9;--btn:#1e2f5a;--blue:#1d3a8a;--red:#d93a3a;--green:#2f9e44}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+button{font-family:inherit;cursor:pointer}
+/* prototype bar */
+#ctl{background:#111827;color:#e5e7eb;font-size:12px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:6px 14px;flex:0 0 auto}
+#ctl .lbl{font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fbbf24;font-size:11px}
+#ctl .seg{display:inline-flex;border:1px solid #4b5563;border-radius:6px;overflow:hidden}
+#ctl .seg button{background:transparent;color:#d1d5db;border:0;padding:4px 9px;font-size:12px}
+#ctl .seg button.on{background:#fbbf24;color:#111827;font-weight:600}
+#ctl .seg button:disabled{opacity:.35;cursor:not-allowed}
+#ctl .btn{background:#374151;border:0;color:#fff;border-radius:6px;padding:5px 10px;font-size:12px}
+#ctl .btn.pri{background:#2563eb}
+#ctl label{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+#note{background:#fef3c7;color:#78350f;font-size:12.5px;padding:7px 14px;display:flex;gap:10px;align-items:center;flex:0 0 auto;border-bottom:1px solid #fde68a}
+#note b{margin-right:4px}#note button{margin-left:auto;background:none;border:0;font-size:16px;color:#78350f}
+#shell{flex:1;display:flex;min-height:0}
+/* sidebar */
+#side{width:240px;background:var(--nav);color:var(--navtxt);display:flex;flex-direction:column;flex:0 0 240px;font-size:13px}
+.brand{background:var(--nav2);height:58px;display:flex;align-items:center;gap:10px;padding:0 14px;font-weight:700;letter-spacing:.02em}
+.brand .lg{width:32px;height:32px;border-radius:50%;background:#fff;display:grid;place-items:center;color:var(--nav);font-size:15px}
+.brand .x{margin-left:auto;font-size:18px;opacity:.9}
+.sjob{background:var(--nav2);padding:8px 8px 14px;display:flex}
+.sjob .in{background:#fff;color:#999;flex:1;height:26px;border-radius:3px 0 0 3px;font-size:10.5px;padding:6px 6px}
+.sjob .tg{background:#fff;color:var(--blue);font-size:9px;font-weight:700;padding:8px 4px;border-left:1px solid #ddd}
+.sjob .go{background:#13224f;width:26px;height:26px;display:grid;place-items:center;border-radius:0 3px 3px 0}
+.nv{display:flex;align-items:center;gap:12px;padding:0 14px;height:36px;cursor:default;opacity:.95}
+.nv .ar{margin-left:auto;font-size:9px}
+.sub{background:#1b3a7d;box-shadow:inset 0 0 0 1px #2c4d98}
+.sub .nv{padding-left:26px;cursor:pointer}
+.sub .nv.on{color:var(--navact);font-weight:600}
+.sub .nv:hover{background:#264a95}
+.sbot{margin-top:auto;border-top:2px solid #162b63;display:flex;justify-content:space-around;padding:10px 0;font-size:13px}
+.ico{width:16px;height:16px;flex:0 0 16px;vertical-align:middle}
+/* main */
+#main{flex:1;overflow:auto;padding:14px 24px 20px;position:relative}
+.ph{display:flex;align-items:center;justify-content:space-between;height:48px}
+.ph h1{font-size:21px;margin:0;font-weight:700}
+.cbtn{background:var(--btn);color:#fff;border:0;border-radius:6px;padding:0 16px;height:38px;font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+.card{background:#fff;border-radius:6px;padding:12px 16px 16px;position:relative;margin-top:6px}
+.frow{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.frow .sp{flex:1}
+.search{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:6px;height:46px;padding:0 12px;width:400px;flex:1 1 400px;max-width:400px;min-width:180px;box-shadow:0 1px 2px rgba(0,0,0,.04);position:relative}
+.search input{border:0;outline:0;flex:1;font:inherit;font-size:15px;color:var(--ink);min-width:0}
+.fb{height:46px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:0 16px;font-size:15px;display:flex;align-items:center;gap:8px;box-shadow:0 1px 2px rgba(0,0,0,.04);color:#2b3245;position:relative}
+.fb.on{background:#eef2ff;border-color:#a5b4fc}
+.allmy{display:flex;border:1px solid var(--line);border-radius:8px;padding:4px;height:46px;gap:2px}
+.allmy button{border:0;background:#fff;padding:0 18px;border-radius:5px;font-size:15px;font-weight:600;color:#222}
+.allmy button.on{background:var(--btn);color:#fff}
+.rng{color:#555;min-width:225px;justify-content:space-between}
+/* branch field */
+.bfw{position:relative;width:280px;flex:0 0 280px}
+.bf{height:46px;border:1px solid var(--line);border-radius:6px;background:#fff;display:flex;align-items:center;gap:6px;padding:0 8px;cursor:text;box-shadow:0 1px 2px rgba(0,0,0,.04);overflow:visible;position:relative}
+.bf.open{border-color:#6b82d6;box-shadow:0 0 0 2px #dbe4ff}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#e9edf5;border-radius:14px;height:28px;padding:0 10px 0 6px;font-size:13.5px;max-width:170px;flex:0 1 auto;min-width:0}
+.chip span.t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .cx{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font-size:12px;color:#4b5563;flex:0 0 16px;cursor:pointer}
+.chip .cx:hover{background:#cfd6e4}
+.badge{background:var(--blue);color:#fff;border-radius:12px;font-size:12px;font-weight:600;height:24px;padding:0 8px;display:inline-flex;align-items:center;position:relative;flex:0 0 auto;cursor:pointer}
+.badge .tip{display:none;position:absolute;top:30px;left:0;background:#1f2937;color:#fff;border-radius:6px;padding:8px 12px;font-weight:400;font-size:12.5px;z-index:60;white-space:nowrap;max-height:220px;overflow:auto;box-shadow:0 6px 16px rgba(0,0,0,.2)}
+.badge:hover .tip{display:block}
+.tip div{padding:2px 0}
+.bf input{border:0;outline:0;flex:1;min-width:30px;font:inherit;font-size:14.5px;background:transparent}
+.bf .ca{color:#6b7280;flex:0 0 auto;width:22px;height:22px;display:grid;place-items:center;border-radius:4px;cursor:pointer;font-size:12px}
+.bf .ca:hover{background:#eef0f4}
+.dd{position:absolute;top:50px;left:0;width:100%;min-width:310px;background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(20,30,60,.16);z-index:50;padding:0 0 4px;max-height:300px;overflow:auto}
+.opt{display:flex;gap:10px;align-items:center;padding:9px 14px;cursor:pointer}
+.opt:hover{background:#f3f5fb}
+.opt .s{color:var(--mut);font-size:12.5px}
+.opt.all{border-bottom:1px solid var(--line);font-weight:600;position:sticky;top:0;background:#fff;z-index:2}
+.cb{width:17px;height:17px;border:1.5px solid #9aa3b5;border-radius:3px;display:grid;place-items:center;flex:0 0 17px;background:#fff}
+.cb.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.cb.on::after{content:"✓";font-size:12px;line-height:1}
+/* tags */
+.dp{display:inline-block;background:#e5e7eb;color:#6b7280;font-size:9.5px;font-weight:600;padding:1px 5px;border-radius:3px;margin-left:6px;vertical-align:middle;text-transform:lowercase;font-style:normal;white-space:nowrap}
+.dp.abs{position:absolute;top:-8px;left:6px;z-index:65;margin:0}
+/* tabs */
+.tabs{display:flex;gap:30px;padding:6px 4px 12px;border-bottom:1px solid var(--line);margin-bottom:12px;position:relative}
+.tabs button{background:none;border:0;font-size:15px;color:#555;display:flex;gap:7px;align-items:center;padding:4px 0}
+.tabs button.on{color:var(--blue);font-weight:600}
+/* table */
+.tw{overflow-x:auto;position:relative}
+table.t{border-collapse:collapse;width:100%;min-width:1000px}
+table.t th{background:#f7f8fb;text-align:left;font-weight:600;font-size:14.5px;height:48px;padding:0 10px;white-space:nowrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line);position:relative}
+table.t td{padding:10px;border-bottom:1px solid var(--line);font-size:14.5px;vertical-align:middle;height:62px;color:#2b3245}
+table.t td b{font-weight:600;color:var(--ink);display:block}
+table.t td small{display:block;color:var(--mut);font-size:13px}
+table.t tr.cl:hover td{background:#fafbfd}
+.th{display:inline-flex;align-items:center;gap:6px}
+.th .s{cursor:pointer}
+.th .fi{cursor:pointer;opacity:.75;display:inline-grid}
+.th .fi.act{color:#2563eb;opacity:1}
+.sa{font-size:10px;color:#2563eb}
+.rb{width:32px;height:32px;border:1px solid var(--line);border-radius:5px;background:#fff;display:grid;place-items:center}
+.st{cursor:pointer;color:#c4c9d6;display:grid;place-items:center;width:28px}
+.st.on{color:#f59e0b}
+.pill{display:inline-block;color:#fff;font-weight:600;font-size:13px;padding:3px 9px;border-radius:4px}
+.empty{padding:60px 0;text-align:center;color:var(--mut);font-size:15px}
+.foot{display:flex;align-items:center;justify-content:space-between;padding-top:14px;color:#444}
+.foot select{height:42px;border:1px solid var(--line);border-radius:5px;padding:0 10px;font:inherit;margin-left:8px;background:#fff}
+.pg{display:flex;gap:10px;align-items:center}
+.pg button{width:36px;height:36px;border-radius:50%;border:0;background:#e5e8ee;color:#777}
+.pg button:not(:disabled){background:#d4dbea;color:#1d3a8a}
+.ov{position:absolute;inset:0;background:rgba(255,255,255,.72);display:grid;place-items:center;z-index:30;border-radius:4px}
+.sp2{width:34px;height:34px;border:4px solid #cbd5f0;border-top-color:var(--blue);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* pop & drawer & toast */
+#pop{position:fixed;z-index:200}
+.menu{background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(20,30,60,.18);min-width:170px;padding:4px 0}
+.menu div{padding:8px 14px;cursor:pointer;font-size:14px}
+.menu div:hover{background:#f3f5fb}
+.fpop{background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(20,30,60,.18);padding:12px;width:230px}
+.fpop input{width:100%;height:34px;border:1px solid #cfd5e2;border-radius:4px;padding:0 8px;font:inherit;margin-bottom:8px}
+.fpop .r{display:flex;gap:8px;justify-content:flex-end}
+.sb{border:1px solid #cfd5e2;background:#fff;border-radius:5px;padding:5px 12px;font-size:13px}
+.sb.p{background:var(--btn);color:#fff;border-color:var(--btn)}
+#toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:500;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{color:#fff;padding:11px 20px;border-radius:6px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:560px;text-align:center}
+.toast.r{background:var(--red)}.toast.g{background:var(--green)}
+.dr{position:fixed;top:0;right:0;bottom:0;width:440px;background:#fff;z-index:150;box-shadow:-8px 0 30px rgba(0,0,0,.2);display:flex;flex-direction:column}
+.drb{position:fixed;inset:0;background:rgba(15,23,42,.3);z-index:140}
+.dr h2{margin:0;font-size:18px}
+.dr .hd{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.dr .bd{padding:16px 20px;overflow:auto;flex:1;position:relative}
+.dr .ft{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;position:relative}
+.xb{background:none;border:0;font-size:20px;color:#555}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:10px 12px;font-size:14px}.kv dt{color:var(--mut)}.kv dd{margin:0}
+.cr{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:6px;margin-bottom:8px;background:#fff;cursor:grab}
+.cr .h{color:#9aa3b5}
+.btn2{border:1px solid #cfd5e2;background:#fff;border-radius:6px;height:36px;padding:0 14px;font-size:14px;font-weight:500}
+.btn2.p{background:var(--btn);border-color:var(--btn);color:#fff}
+/* details */
+.dh{background:#fff;border-radius:6px;padding:16px 20px;margin-top:6px;position:relative}
+.dh .top{display:flex;align-items:center;gap:12px}
+.dh h2{margin:0;font-size:20px}
+.bk{background:none;border:0;color:var(--blue);font-weight:600;font-size:14px;padding:0}
+.stg{display:flex;margin:16px 0 4px;position:relative}
+.stg div{flex:1;text-align:center;padding:9px 6px;background:#e8ecf5;color:#445;cursor:pointer;font-weight:500;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%);margin-left:-6px}
+.stg div.on{background:var(--blue);color:#fff}
+.dtabs{display:flex;gap:26px;border-bottom:1px solid var(--line);margin:14px 0}
+.dtabs button{background:none;border:0;padding:8px 0;font-size:14.5px;color:#555;border-bottom:3px solid transparent}
+.dtabs button.on{color:var(--blue);font-weight:600;border-color:var(--blue)}
+.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.note{border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:8px;font-size:14px}
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--line);border-top:1px solid var(--line)}
+.cal .dn{background:#f7f8fb;padding:8px;font-weight:600;border-right:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center}
+.cal .dc{min-height:104px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px;font-size:12px}
+.cal .dc>span{color:var(--mut);display:block;text-align:right;padding:2px 4px}
+.ev{color:#fff;border-radius:3px;padding:2px 6px;margin-bottom:3px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px}
+/* guide */
+#guide .gp{position:fixed;top:0;right:0;bottom:0;width:430px;background:#fff;z-index:300;box-shadow:-8px 0 30px rgba(0,0,0,.3);display:flex;flex-direction:column}
+#guide .gh{padding:14px 18px;background:#111827;color:#fff;display:flex;justify-content:space-between;align-items:center}
+#guide .gb{overflow:auto;padding:12px 16px}
+.sc{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.sc h4{margin:0 0 4px;font-size:14px}
+.sc p{margin:0 0 8px;font-size:12.5px;color:#444}
+.sc .nt{background:#fff7ed;border-left:3px solid #f59e0b;font-size:12px;padding:4px 8px;margin-bottom:8px;color:#7c2d12}
+
+/* FMS-20045 v2 additions */
+.dr{width:680px;max-width:100vw}.dr.n{width:440px}
+.xr{width:28px;height:28px;border-radius:50%;border:0;background:#fde8e8;color:#d93a3a;font-size:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.g2 .full{grid-column:1/-1}
+.fl label{display:block;font-weight:500;color:#333;margin-bottom:6px;font-size:14.5px}.rq{color:#e03131;margin-left:2px}
+.fi2{white-space:nowrap;overflow:hidden;background:#ebedf1;border-radius:6px;min-height:40px;padding:10px 12px;font-size:14.5px;display:flex;align-items:center;justify-content:space-between;word-break:break-word}
+.fi2.sel::after{content:"";border:5px solid transparent;border-top:6px solid #8b93a4;margin-top:6px;flex:0 0 auto}.fi2.area{min-height:80px;align-items:flex-start}
+.ph2{color:#9aa3b5}.hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.acc{background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.18);padding:16px 20px;font-weight:600;display:flex;justify-content:space-between;margin-bottom:16px}
+.btn2.g{background:#eceef2;border-color:#eceef2}.btn2.dl2{background:#ee3124;border-color:#ee3124;color:#fff}.ft.sp{justify-content:space-between}
+.hamn{display:none}.ham{display:none;position:absolute;top:6px;left:6px;z-index:20;background:#1f2937;color:#fff;border:0;border-radius:3px;width:26px;height:22px;font-size:14px;line-height:1;padding:0}
+body.det .ham{display:block}
+#side.hide{display:none}
+#side.hide.open,#side.open{display:flex;position:fixed;top:0;left:0;bottom:0;z-index:400}
+.dtop{display:flex;justify-content:space-between;align-items:center;height:48px;padding-left:34px}
+.dl{display:flex;align-items:center;gap:10px}.dl h1{margin:0;font-size:21px}
+.bkc{width:28px;height:28px;border-radius:50%;border:2px solid #222;background:#fff;display:grid;place-items:center;padding:0}.bkc .ico{width:14px;height:14px}
+.dr2{display:flex;gap:10px}
+.rbtn{background:#ee5a52;color:#fff;border:0;border-radius:6px;padding:0 14px;height:38px;font-weight:600;font-size:14px}
+.dtabs2{display:flex;gap:6px;border-bottom:1px solid var(--line);margin:4px 0 14px;padding-left:8px}
+.dtabs2 button{background:none;border:0;padding:10px 12px;font-size:15px;color:#555;border-bottom:3px solid transparent}
+.dtabs2 button.on{color:var(--blue);font-weight:600;border-color:var(--blue)}
+.hcard{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px 18px;display:flex;gap:16px;align-items:flex-start;margin-bottom:16px}
+.avt{width:56px;height:56px;border-radius:4px;background:#e8eafc;display:grid;place-items:center;color:#445;font-size:20px;flex:0 0 56px}
+.hm{flex:1;min-width:0}.hn{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.hn h2{margin:0;font-size:20px}
+.hl{display:flex;gap:8px;align-items:center;color:#444;margin-top:6px;font-size:14.5px}.hl .ico{width:14px;height:14px;color:#666}
+.stc{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:#c4c9d6;cursor:pointer;background:#fff}.stc.on{color:#f59e0b}
+.ebtn{background:#2a68c8;color:#fff;border:0;border-radius:4px;padding:0 14px;height:38px;font-weight:600;font-size:14px;display:flex;gap:8px;align-items:center}
+.abtn{background:#fff;border:1px solid var(--line);border-radius:4px;padding:0 14px;height:38px;font-weight:500;font-size:14px}.hbtns{display:flex;gap:10px}
+.cols2{display:grid;grid-template-columns:min(400px,34%) 1fr;gap:18px;align-items:start}
+.info{background:#fff;border:1px solid var(--line);border-radius:6px;padding:18px 18px}.info h3{margin:0 0 10px;font-size:16px}
+.ir{display:flex;justify-content:space-between;gap:12px;padding:9px 0;color:#555;font-size:14.5px}.ir span:last-child{color:#1a1f2e;text-align:right}
+.mut{color:#555}.tag{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:3px 8px;font-size:12.5px;font-weight:500}
+.hot{display:inline-flex;align-items:center;gap:4px;border:1px solid #ee3124;color:#ee3124;border-radius:16px;padding:3px 12px;font-weight:500}
+.pr{display:inline-block;background:#fdebc8;color:#7a4b00;border:1px solid #f6d898;border-radius:12px;padding:1px 10px;font-size:12.5px;font-weight:500}
+.rt{min-width:0}.lt{font-weight:600;font-size:16px;margin-bottom:10px}
+.pl{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.pn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;display:grid;place-items:center;flex:0 0 38px;padding:0}
+.pv{display:flex;overflow:hidden;flex:1;min-width:0}
+.ch{flex:0 0 188px;height:48px;background:var(--c);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%,14px 50%);padding:1.5px;margin-right:-2px;cursor:pointer;position:relative}
+.ch:first-child{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%)}
+.ch div{height:100%;background:#fff;color:var(--c);display:grid;place-items:center;font-weight:500;font-size:15px;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%,14px 50%)}
+.ch:first-child div{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%)}
+.ch div.cur{background:var(--c);color:#fff}
+.atabs{display:flex;gap:28px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:0 10px;overflow-x:auto}
+.atabs button{background:none;border:0;padding:14px 4px;font-size:15px;color:#444;display:flex;gap:7px;align-items:center;border-bottom:3px solid transparent;white-space:nowrap}
+.atabs button.on{color:var(--blue);font-weight:600;border-color:var(--blue)}
+.apan{background:#fff;padding:14px 14px 20px;margin-top:8px;border-radius:6px}
+.ah{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:12px;gap:10px;flex-wrap:wrap}.ah h3{margin:0;font-size:19px}.ar{display:flex;gap:10px;flex-wrap:wrap}
+.addn{height:44px;font-size:14.5px;font-weight:500;padding:0 16px}.rng2{height:44px;font-size:14px;color:#555;gap:8px}
+.sec{font-weight:600;margin:14px 0 8px;font-size:15px;padding-left:6px}
+.sbox{background:#f6f7f9;border:1px solid var(--line);border-radius:8px;padding:8px}
+.se{text-align:center;padding:40px 0;color:#444;display:flex;flex-direction:column;align-items:center;gap:10px}.mc{width:40px;height:40px;border-radius:50%;background:#e8eaef;display:grid;place-items:center;color:#777}
+.ai{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin:8px 0}
+.aic{width:40px;height:40px;border-radius:6px;display:grid;place-items:center;color:#fff;flex:0 0 40px}.aic .ico{width:20px;height:20px}
+.aim{flex:1;min-width:0}.ait{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ait b{font-weight:600;font-size:15px}
+.pill.gn{background:#4bb87a;font-size:11.5px;padding:2px 7px}.pill.gy{background:#eceef2;color:#eceef2;font-size:11.5px;padding:2px 14px}
+.aio{display:flex;gap:8px;align-items:center;margin-top:6px;color:#444;font-size:14.5px}
+.av{width:26px;height:26px;border-radius:50%;border:1.5px solid #2a68c8;background:#e8f0fe;color:#2a68c8;font-size:10px;font-weight:600;display:grid;place-items:center}
+.aid{font-size:13.5px;color:#444;text-align:right;max-width:420px}
+.ecard{background:#fff;border-radius:6px;padding:16px}.erow{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}.erow .sp{flex:1}
+@media(max-width:900px){.cols2{grid-template-columns:1fr}}
+@media(max-width:760px){
+ #side:not(.open){display:none}.ham{display:block}
+ #main{padding:10px 12px 20px}.ph{padding-left:34px}
+ .frow{flex-wrap:wrap}.search{width:100%!important;max-width:none!important;flex:1 1 100%}.bfw{width:100%;flex:1 1 100%}.frow .sp{display:none}
+ .fb.rng{min-width:0;flex:1 1 100%}.dr{width:100vw}.g2{grid-template-columns:1fr}
+ .dtop{flex-wrap:wrap;height:auto;gap:8px}.aid{max-width:none;text-align:left}.ai{flex-wrap:wrap}
+ #guide .gp{width:100vw}.cal{font-size:10px}.cal .dc{min-height:70px;overflow:hidden}#note{flex-wrap:wrap}
+}
+
+/* corrections v3 */
+.cph{height:auto;min-height:56px;flex-wrap:wrap;gap:10px}.cll,.cr2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.cll h1{margin:0;font-size:24px;margin-right:6px}
+.btn2.td{height:40px;color:#555;background:#f1f2f5;border-color:var(--line)}.btn2.nv2{height:40px;width:40px;padding:0;display:grid;place-items:center}.cm{font-size:18px;margin-left:6px}
+.cf{position:relative;display:flex;align-items:center;gap:6px;width:340px;height:44px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:0 10px;cursor:pointer}.cfi{flex:1;display:flex;gap:4px;overflow:hidden}
+.cchip{background:#e7eaf0;border-radius:10px;padding:2px 8px;font-size:12px;white-space:nowrap}.cchip b{margin-left:3px;cursor:pointer}.cx2{color:#777;font-size:12px}.cv{color:#777;font-size:12px}
+.cdd{position:absolute;top:46px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:4px;box-shadow:0 6px 16px rgba(0,0,0,.15);z-index:60;cursor:default}
+.co{display:flex;gap:10px;align-items:center;padding:9px 12px;font-size:15px;cursor:pointer}.co.sm{font-size:13px;border-bottom:1px solid var(--line)}.co:hover{background:#eef1f8}
+.msel{height:44px;border:1px solid var(--line);border-radius:6px;padding:0 12px;font:inherit;background:#fff;font-size:15px}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:6px}
+.cdn{font-size:13px;font-weight:600;color:#444;padding:14px 6px 4px;letter-spacing:.04em}
+.dc2{background:#fff;border:1px solid var(--line);border-radius:5px;min-height:140px;padding:8px 6px;min-width:0}.dc2.out{background:#f1f2f5;color:#999}
+.dnum{display:inline-grid;place-items:center;min-width:28px;height:28px;border-radius:50%;font-weight:600;font-size:15px;margin:0 0 6px 4px}.dc2.out .dnum{color:#9aa3b5;font-weight:500}.dnum.today{background:#1f3a7a;color:#fff}
+.ev2{display:flex;gap:6px;align-items:center;border-left:3px solid;border-radius:3px;padding:3px 6px;margin-bottom:4px;font-size:12.5px;cursor:pointer;min-width:0}.ev2 .ico{width:12px;height:12px;flex:0 0 12px}.ev2 span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev2.more{background:#fbe3ea;border-left-color:#c2185b;color:#b0123f;font-weight:600}
+.dur{display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px;align-items:center}
+.stabs{display:flex;gap:36px;border-bottom:1px solid var(--line);margin:0 0 14px;padding-left:24px}.stabs button{background:none;border:0;font-size:16px;color:#777;padding:12px 0;border-bottom:3px solid transparent}.stabs button.on{color:var(--blue);font-weight:600;border-color:var(--blue)}
+.sw{display:inline-block;width:28px;height:28px;border-radius:5px;vertical-align:middle;margin-right:10px}
+@media(max-width:760px){.cf{width:100%}.cgrid{gap:3px}.dc2{min-height:70px;padding:3px}.ev2{font-size:10px}.stabs{gap:16px;overflow-x:auto;padding-left:4px}.stabs button{white-space:nowrap;font-size:14px}}
+</style>
+</head>
+<body>
+<div id="ctl"></div>
+<div id="note" style="display:none"></div>
+<div id="shell"><div id="side"></div><div id="main"></div></div>
+<div id="pop"></div><div id="drawer"></div><div id="guide"></div><div id="toast"></div>
+<script>
+/* ============ constants & seed data ============ */
+const BR={A:{n:'Royal Logistics',c:'Dover, United Kingdom'},B:{n:'Royal Logistics - China',c:'Minhang, China'},C:{n:'Dubai',c:'Dubai, United Arab Emirates'},
+ D:{n:'Royal Logistics Pakistan',c:'Karachi, Pakistan'},E:{n:'Seacon Logistics BV',c:'PR Venlo, The Netherlands'},F:{n:'Royal Logistics India',c:'Mumbai, India'},
+ G:{n:'Royal Logistics Singapore',c:'Singapore, Singapore'},H:{n:'Royal Logistics USA',c:'Houston, United States'},I:{n:'Royal Logistics Germany',c:'Hamburg, Germany'},
+ J:{n:'Royal Logistics International Freight Forwarding LLC',c:'Dhaka, Bangladesh'}};
+const ORDER=['A','B','C','D','E','F','G','H','I','J'];
+const ME='Rashed Saad',SUBS=['Sakshi Barnwal','Rafia Khan'];
+const MSG_BLOCK='Access restricted for the current branch';
+const MSG_PERM='You do not have permission to perform this action. Please contact your Admin or service@freightoscope.com for assistance.';
+const DN=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const pad=n=>String(n).padStart(2,'0');
+const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+function fday(iso){const d=new Date(iso+'T00:00:00');return `${DN[d.getDay()]}, ${MN[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`}
+const STG_LEAD=[['New','#2f2fc4'],['Contacted','#3aa3d6'],['Lost','#e5534b'],['Proposal Sent','#f0a030'],['Qualified','#2ea86b'],['Negotiation','#e8532a'],['Converted','#3cb043']];
+const STG_OPP=[['New','#2f2fc4'],['Qualifications','#3aa3d6'],['Proposal Sent','#2ea86b'],['Negotiation','#f0a030'],['Won','#3cb043'],['Lost','#e5534b'],['Test','#e5534b']];
+const oStg=n=>(STG_OPP.find(x=>x[0]==n)||['','#2f2fc4'])[1];
+const ADDR={'Parties0073':'Anna malai, 17-2, Trichwalli, Tamilnadu, 19839','JOREST':'Lakeview Road, West Bengal'};
+const XLEADS=[
+ ['Parties0057','ABC Exporters Ltd.','Karachi, Pakistan','New','Active','Hot','Rashed Saad','D',0,'2026-10-19'],
+ ['Parties0056','ABC Freight','Lahore, Pakistan','Contacted','Active','','Hrucha Malusare','D',0,'2026-10-07'],
+ ['Parties0055','ABC Logistics','Venlo, The Netherlands','New','Active','Hot','Rashed Saad','E',0,'2026-10-18'],
+ ['Parties0054','A star','Rotterdam, The Netherlands','Contacted','Active','','Hrucha Malusare','E',0,'2026-10-06'],
+ ['Parties0053','1EURO STORE SH.P.K','Mumbai, India','New','Active','Hot','Sakshi Barnwal','F',0,'2026-10-17'],
+ ['Parties0052','MCLAREN','Pune, India','New','Active','Hot','Rashed Saad','F',0,'2026-10-05'],
+ ['Parties0051','Nordic Cargo Lines','Singapore, Singapore','Qualified','Active','Hot','Rashed Saad','G',0,'2026-10-16'],
+ ['Parties0050','Scuderia Ferrari','Maranello, Italy','New','Active','','Rafia Khan','G',0,'2026-10-04'],
+ ['Parties0049','Trade Master Customer','Houston, United States','New','Active','Hot','Rashed Saad','H',0,'2026-10-15'],
+ ['Parties0048','Gulf Coast Imports Inc.','Houston, United States','Contacted','Active','','Hrucha Malusare','H',0,'2026-10-03'],
+ ['Parties0047','Elbe Cargo GmbH','Hamburg, Germany','New','Active','Hot','Rashed Saad','I',0,'2026-10-14'],
+ ['Parties0046','Hanse Forwarding AG','Bremen, Germany','New','Active','','Rafia Khan','I',0,'2026-10-02'],
+ ['Parties0045','Padma Shipping Ltd.','Dhaka, Bangladesh','New','Active','Hot','Rashed Saad','J',0,'2026-10-13'],
+ ['Parties0044','Meghna Exports Ltd.','Chittagong, Bangladesh','Contacted','Active','','Rabindranath Tagore','J',0,'2026-10-01']];
+const XOPPS=[
+ ['KHI-DXB Sea Freight','Karachi-Dubai','ABC Exporters Ltd.','Karachi, Pakistan','Pakistan','United Arab Emirates','Rashed Saad','Imran Qureshi','D','New','2026-10-19'],
+ ['Karachi Warehouse Contract','','ABC Freight','Lahore, Pakistan','','','Hrucha Malusare','Sana Malik','D','Qualifications','2026-10-08'],
+ ['RTM-VNO Rail','Rotterdam-Venlo','ABC Logistics','Venlo, The Netherlands','Netherlands','Netherlands','Rashed Saad','Daan de Vries','E','New','2026-10-18'],
+ ['Venlo Distribution Deal','','A star','Rotterdam, The Netherlands','','','Hrucha Malusare','Eva Jansen','E','Proposal Sent','2026-10-06'],
+ ['BOM-JFK Air','Mumbai-New York','1EURO STORE SH.P.K','Mumbai, India','India','United States','Sakshi Barnwal','Anil Kapoor','F','Negotiation','2026-10-17'],
+ ['Mumbai Export Contract','','MCLAREN','Pune, India','','','Rashed Saad','Neha Joshi','F','New','2026-10-05'],
+ ['SIN-HAM Sea Freight','Singapore-Hamburg','Nordic Cargo Lines','Singapore, Singapore','Singapore','Germany','Rashed Saad','Lars Nordin','G','Qualifications','2026-10-16'],
+ ['Singapore Hub Contract','','Scuderia Ferrari','Maranello, Italy','','','Rafia Khan','Marco Rossi','G','New','2026-10-04'],
+ ['IAH-LHR Air','Houston-London','Trade Master Customer','Houston, United States','United States','United Kingdom','Rashed Saad','Tom Baker','H','Proposal Sent','2026-10-15'],
+ ['Houston Project Cargo','','Gulf Coast Imports Inc.','Houston, United States','','','Hrucha Malusare','Dana Wells','H','New','2026-10-03'],
+ ['HAM-NYC Sea','Hamburg-New York','Elbe Cargo GmbH','Hamburg, Germany','Germany','United States','Rashed Saad','Jonas Weber','I','Negotiation','2026-10-14'],
+ ['Hamburg Breakbulk','','Hanse Forwarding AG','Bremen, Germany','','','Rafia Khan','Greta Lang','I','New','2026-10-02'],
+ ['DAC-CGP Rail','Dhaka-Chittagong','Padma Shipping Ltd.','Dhaka, Bangladesh','Bangladesh','Bangladesh','Rashed Saad','Farhan Ahmed','J','Qualifications','2026-10-13'],
+ ['Dhaka Garments Contract','','Meghna Exports Ltd.','Chittagong, Bangladesh','','','Rabindranath Tagore','Nusrat Jahan','J','New','2026-10-01'],
+ ['Alpha Freight Annual Rates','','Alpha Freight','Sydney, Australia','','','Rashed Saad','Priya Nair','A','Qualifications','2026-10-12']];
+const XCONT=[
+ ['Imran Qureshi','ABC Exporters Ltd.','Karachi, Pakistan','Rashed Saad','imran@abcexporters.pk','+92-3001234567','Rashed Saad','D','2026-10-19'],
+ ['Sana Malik','ABC Freight','Lahore, Pakistan','Hrucha Malusare','sana@abcfreight.pk','--','Hrucha Malusare','D','2026-10-07'],
+ ['Daan de Vries','ABC Logistics','Venlo, The Netherlands','Rashed Saad','daan@abclogistics.nl','+31-612345678','Rashed Saad','E','2026-10-18'],
+ ['Eva Jansen','A star','Rotterdam, The Netherlands','Hrucha Malusare','eva@astar.nl','--','Hrucha Malusare','E','2026-10-06'],
+ ['Anil Kapoor','1EURO STORE SH.P.K','Mumbai, India','Sakshi Barnwal','anil@1euro.in','+91-9820011223','Sakshi Barnwal','F','2026-10-17'],
+ ['Neha Joshi','MCLAREN','Pune, India','Rashed Saad','neha@mclaren.in','--','Rashed Saad','F','2026-10-05'],
+ ['Lars Nordin','Nordic Cargo Lines','Singapore, Singapore','Rashed Saad','lars@nordiccargo.sg','+65-81234567','Rashed Saad','G','2026-10-16'],
+ ['Marco Rossi','Scuderia Ferrari','Maranello, Italy','Rafia Khan','marco@ferrari.it','--','Rafia Khan','G','2026-10-04'],
+ ['Tom Baker','Trade Master Customer','Houston, United States','Rashed Saad','tom@trademaster.com','+1-7135550101','Rashed Saad','H','2026-10-15'],
+ ['Dana Wells','Gulf Coast Imports Inc.','Houston, United States','Hrucha Malusare','dana@gulfcoast.com','--','Hrucha Malusare','H','2026-10-03'],
+ ['Jonas Weber','Elbe Cargo GmbH','Hamburg, Germany','Rashed Saad','jonas@elbecargo.de','+49-40123456','Rashed Saad','I','2026-10-14'],
+ ['Greta Lang','Hanse Forwarding AG','Bremen, Germany','Rafia Khan','greta@hanse.de','--','Rafia Khan','I','2026-10-02'],
+ ['Farhan Ahmed','Padma Shipping Ltd.','Dhaka, Bangladesh','Rashed Saad','farhan@padma.com.bd','+880-1711000000','Rashed Saad','J','2026-10-13'],
+ ['Nusrat Jahan','Meghna Exports Ltd.','Chittagong, Bangladesh','Rabindranath Tagore','nusrat@meghna.com.bd','--','Rabindranath Tagore','J','2026-10-01']];
+const XACTS=[
+ ['Call Karachi office','Call','2026-10-13T10:00','ABC Exporters Ltd.','KHI-DXB Sea Freight','Rashed Saad','D'],
+ ['Meeting with Pakistan agent','Meeting','2026-10-15T11:00','ABC Freight','Karachi Warehouse Contract','Rafia Khan','D'],
+ ['Email to Venlo team','Email','2026-10-09T09:00','ABC Logistics','RTM-VNO Rail','Hrucha Malusare','E'],
+ ['Prepare Venlo rates','Task','2026-10-12T14:00','A star','Venlo Distribution Deal','Hrucha Malusare','E'],
+ ['Call Mumbai desk','Call','2026-10-08T10:30','1EURO STORE SH.P.K','BOM-JFK Air','Hrucha Malusare','F'],
+ ['Email to Mumbai customer','Email','2026-10-17T13:00','MCLAREN','Mumbai Export Contract','Hrucha Malusare','F'],
+ ['Meeting with Nordic team','Meeting','2026-10-14T16:00','Nordic Cargo Lines','SIN-HAM Sea Freight','Hrucha Malusare','G'],
+ ['Create Quotation for Ferrari hub','Task','2026-10-19T11:30','Scuderia Ferrari','Singapore Hub Contract','Hrucha Malusare','G'],
+ ['Call Houston office','Call','2026-10-10T15:00','Trade Master Customer','IAH-LHR Air','Hrucha Malusare','H'],
+ ['Meeting with Gulf Coast','Meeting','2026-10-21T10:00','Gulf Coast Imports Inc.','Houston Project Cargo','Hrucha Malusare','H'],
+ ['Email to Hamburg team','Email','2026-10-11T08:30','Elbe Cargo GmbH','HAM-NYC Sea','Rabindranath Tagore','I'],
+ ['Customs documents Hamburg','Task','2026-10-18T12:00','Hanse Forwarding AG','Hamburg Breakbulk','Rabindranath Tagore','I'],
+ ['Call Dhaka office','Call','2026-10-12T09:30','Padma Shipping Ltd.','DAC-CGP Rail','Rabindranath Tagore','J'],
+ ['Meeting with Meghna Exports','Meeting','2026-10-20T15:30','Meghna Exports Ltd.','Dhaka Garments Contract','Rabindranath Tagore','J'],
+ ['Email to Meridian Freight','Email','2026-10-13T09:00','Meridian Freight Solutions','SIN-NYC Air Freight','Rashed Saad','B']];
+function fdt(s){const d=new Date(s+':00');let h=d.getHours();const ap=h>=12?'PM':'AM';h=h%12||12;return `${DN[d.getDay()]}, ${MN[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} at ${h}:${pad(d.getMinutes())}:00 ${ap} GMT+06:00`}
+function seed(){
+ const leads=[
+ ['Parties0073','OM LOGISTICS PVT. LTD.','Chennai, India','Contacted','Active','Hot','Sakshi Barnwal','A',1,'2026-10-20'],
+ ['Parties0072','Alpha Freight','Sydney, Australia','New','Active','Hot','Rashed Saad','A',0,'2026-10-18'],
+ ['Parties0071','360 Logistics Group','Wellington, New Zealand (Aotearoa)','New','Active','Hot','Rafia Khan','A',0,'2026-10-05'],
+ ['Parties0069','Toyota India','Delhi, India','New','Active','Hot','Rashed Saad','A',0,'2026-10-02'],
+ ['Parties0066','Cadical F1','Texas, United States','New','Active','Hot','Rashed Saad','A',0,'2026-09-30'],
+ ['JOREST','Jorasako Estate','Kolkata, India','New','Active','Hot','Rabindranath Tagore','B',0,'2026-10-22'],
+ ['Parties0065','Audi F1','Frankfurt, Germany','New','Active','Hot','Rashed Saad','B',0,'2026-10-16'],
+ ['Parties0061','Mark & Spencer','London, United Kingdom','Contacted','Active','','','B',1,'2026-10-10'],
+ ['Parties0063','Bengal Freight Limited','Dhaka, Bangladesh','','Active','','','B',0,'2026-10-03'],
+ ['Parties0060','Jack&Donns','PARIS, France','New','Active','Hot','Sakshi Barnwal','B',0,'2026-09-29'],
+ ['Parties0070','AlFares Cargo Service & Clearanc','Dubai, United Arab Emirates','','Inactive','','','C',1,'2026-10-24'],
+ ['Parties0064','Bill no. will be available after posting','Mumbai, Albania','Contacted','Active','Hot','Hrucha Malusare','C',0,'2026-10-12'],
+ ['Parties0062','Continental Carriers Pvt. Ltd.','Delhi, India','New','Active','Hot','Sakshi Barnwal','C',0,'2026-10-08'],
+ ['Parties0059','Meridian Freight Solutions','Houston, United States','New','Active','Hot','Rashed Saad','C',0,'2026-10-21'],
+ ['Parties0058','Silverlines Global Pte. Ltd.','Singapore, Singapore','Contacted','Active','','Rashed Saad','C',0,'2026-10-04'],
+ ...XLEADS
+ ].map(a=>({id:a[0],name:a[1],loc:a[2],stage:a[3],status:a[4],temp:a[5],owner:a[6],branch:a[7],fav:!!a[8],d:a[9],addr:ADDR[a[0]]||('Plot 12, Business Park, '+a[2]),role:a[0]=='Parties0073'?'Agent':'Customer'}));
+ const opps=[
+ ['SIN-NYC Air Freight','SIN-NYC','Meridian Freight Solutions','Houston, United States','Singapore','United States','Rashed Saad','Clark Kent','A','Qualifications','2026-10-20'],
+ ['RMS Main office - 5 users','','360 Logistics Group','Wellington, New Zealand (Aotearoa)','','','Rafia Khan','','A','New','2026-10-06'],
+ ['Chennai to Denmark','','Unilever Ltd.','Chennai, India','','','Sakshi Barnwal','','A','Proposal Sent','2026-10-14'],
+ ['Trade Lane DEL-DXB','Kanpur-Delhi-Dubai','OM LOGISTICS PVT. LTD.','Haryana, India','India','United Arab Emirates','Sakshi Barnwal','Rohan Chaturvedi','A','Negotiation','2026-10-19'],
+ ['Q3 Freight Contract','','Alpha Freight','Sydney, Australia','','','Rashed Saad','','B','New','2026-10-17'],
+ ['Shahjadpur to Kolkata Rail Freight','Bangladesh - India','Jorasako Estate','Kolkata, India','Bangladesh','India','Rashed Saad','R Tagore','B','New','2026-10-22'],
+ ['INDEL-AUMEL','','North Ship Container Pvt. Ltd.','Armsterdam, Australia','','','Sakshi Barnwal','Sam Thomsan','B','Proposal Sent','2026-10-09'],
+ ['SGSIN - USLGB','','KIK TEXTILIEN UND NONFOOD GMBH','Boenen, Germany','','','Rashed Saad','','B','New','2026-10-01'],
+ ['DELHI-ATLANTA','','Continental Carriers Pvt. Ltd.','Delhi, India','Algeria','','Sakshi Barnwal','Sumeet Tiwari','C','Negotiation','2026-10-11'],
+ ['India - Canada','','AAA TILES INC.','Calgary Alberta, Canada','','','Rashed Saad','','C','New','2026-10-15'],
+ ['SGSIN - USLGB (Silverlines)','','Silverlines Global Pte. Ltd.','Singapore, Singapore','','','Rashed Saad','','C','Qualifications','2026-10-23'],
+ ['LKCMB - NLRTM','','AAA TILES INC.','Calgary Alberta, Canada','','','Saad Rashed','','C','Proposal Sent','2026-10-03'],
+ ...XOPPS
+ ].map((a,i)=>({id:'O'+(i+1),n:a[0],lane:a[1],party:a[2],ploc:a[3],orig:a[4],dest:a[5],owner:a[6],contact:a[7],branch:a[8],stage:a[9],d:a[10],rev:'USD '+(((i%5)+1)*10)+',000',closure:a[0].startsWith('Shahjadpur')?'2026-10-31':addDays(a[10],10),prob:0}));
+ const contacts=[
+ ['Rohan Chaturvedi','OM LOGISTICS PVT. LTD.','Haryana, India','Sakshi Barnwal','rohan@omlogistics.com','+91-682873888','Sakshi Barnwal','A','2026-10-19'],
+ ['Priya Nair','Alpha Freight','Sydney, Australia','Rashed Saad','priya@alphafreight.com','+61-400123456','Rashed Saad','A','2026-10-17'],
+ ['Aroha Williams','360 Logistics Group','Wellington, New Zealand (Aotearoa)','Rafia Khan','aroha@360logistics.com','+64-211234567','Rafia Khan','A','2026-10-05'],
+ ['Kenji Sato','Toyota India','Delhi, India','Rashed Saad','kenji@toyota.in','--','Rashed Saad','A','2026-10-02'],
+ ['R Tagore','Jorasako Estate','Kolkata, India','Rabindranath Tagore','rabindranath@jorasako.com','--','Rabindranath Tagore','B','2026-10-22'],
+ ['Sam Thomsan','North Ship Container Pvt. Ltd.','Armsterdam, Australia','Sakshi Barnwal','sam@northshipping.com','+04-18292839','Sakshi Barnwal','B','2026-10-09'],
+ ['Varun Kundra','PREMIUM TIRES, PARTS, REPAIRS, WASHING & SERVICING PRIVATE LIMITED','EDMONTON, Canada','--','varun@premium.com','--','Sakshi Barnwal','B','2026-10-04'],
+ ['Sofia Ramirez','Mexico City Electronics Import','Mexico City, Mexico','Rashed Saad','sofia@mcei.com','9988776666','Rashed Saad','B','2026-10-25'],
+ ['Subosh Chatterjee','Continental Carriers Pvt. Ltd.','Delhi, India','Sakshi Barnwal','Subosh@CCPL.cpm','+91-180190900','Sakshi Barnwal','C','2026-10-08'],
+ ['Sumeet Tiwari','Continental Carriers Pvt. Ltd.','Delhi, India','Sakshi Barnwal','sumit@ccpl.com','0893892839','Sakshi Barnwal','C','2026-10-11'],
+ ['Rohan Mehta','Urooj Khalid','Karachi, American Samoa','Sakshi Barnwal','rohal@hul.com','+91-293028300','Sakshi Barnwal','C','2026-10-14'],
+ ['AB XYZ','TESLA','Los Angeles, United States','Hrucha Malusare','abc@freightoscope.com','--','Hrucha Malusare','C','2026-10-21'],
+ ...XCONT
+ ].map((a,i)=>({id:'C'+(i+1),n:a[0],party:a[1],ploc:a[2],owner:a[3],email:a[4],phone:a[5],by:a[6],branch:a[7],d:a[8]}));
+ const acts=[
+ ['Email to customer','Email','2026-10-01T05:00','1EURO STORE SH.P.K','','Rashed Saad','A'],
+ ['Call for Air Shipments','Call','2026-10-02T15:00','Meridian Freight Solutions','SIN-NYC Air Freight','Rashed Saad','A'],
+ ['Meeting with customer','Meeting','2026-10-06T21:00','OM LOGISTICS PVT. LTD.','Trade Lane DEL-DXB','Hrucha Malusare','A'],
+ ['Create Quotation for AAA','Task','2026-10-08T12:00','360 Logistics Group','RMS Main office - 5 users','Rashed Saad','A'],
+ ['Create Quote for Ferrari','Task','2026-10-09T12:00','Alpha Freight','','Hrucha Malusare','A'],
+ ['Email McLaren','Email','2026-10-12T12:00','Unilever Ltd.','Chennai to Denmark','Rashed Saad','A'],
+ ['Call 1','Call','2026-10-14T16:30','Toyota India','','Hrucha Malusare','A'],
+ ['Meeting with McLaren','Meeting','2026-10-15T14:30','Alpha Freight','Q3 Freight Contract','Rashed Saad','A'],
+ ['Call Ferrari','Call','2026-10-02T02:18','Alpha Freight','Q3 Freight Contract','Rashed Saad','B'],
+ ['Test','Call','2026-10-03T11:15','Alpha Freight','Q3 Freight Contract','Sakshi Barnwal','B'],
+ ['Meeting with Nordic Cargo','Meeting','2026-10-05T12:00','North Ship Container Pvt. Ltd.','INDEL-AUMEL','Rashed Saad','B'],
+ ['Email Nordic Cargo Lines','Email','2026-10-07T09:00','Nordic Cargo Lines','','Rabindranath Tagore','B'],
+ ['Prepare Rail Freight rates','Task','2026-10-09T10:00','North Ship Container Pvt. Ltd.','INDEL-AUMEL','Rashed Saad','B'],
+ ['Call 2','Call','2026-10-13T16:30','KIK TEXTILIEN UND NONFOOD GMBH','SGSIN - USLGB','Rabindranath Tagore','B'],
+ ['Meeting with Audi F1','Meeting','2026-10-16T11:00','Audi F1','','Rabindranath Tagore','B'],
+ ['Email to Audi F1','Email','2026-10-20T10:00','Audi F1','','Rabindranath Tagore','B'],
+ ['Create Quotation','Task','2026-10-22T23:00','Jorasako Estate','','Rabindranath Tagore','B'],
+ ['Called Mr. Tagore','Call','2026-10-22T20:30','Jorasako Estate','','Rabindranath Tagore','B'],
+ ['Emailed the Jorasako Team','Email','2026-10-22T15:00','Jorasako Estate','Shahjadpur to Kolkata Rail Freight','Rashed Saad','B'],
+ ['Call 3','Call','2026-10-04T16:00','Continental Carriers Pvt. Ltd.','DELHI-ATLANTA','Rafia Khan','C'],
+ ['Call','Call','2026-10-04T12:00','AAA TILES INC.','India - Canada','Hrucha Malusare','C'],
+ ['Meeting with Continental','Meeting','2026-10-06T11:00','Continental Carriers Pvt. Ltd.','DELHI-ATLANTA','Hrucha Malusare','C'],
+ ['Meeting with Silverlines','Meeting','2026-10-10T10:00','Silverlines Global Pte. Ltd.','SGSIN - USLGB (Silverlines)','Rashed Saad','C'],
+ ['Email AlFares Cargo','Email','2026-10-11T09:30','AlFares Cargo Service & Clearanc','','Hrucha Malusare','C'],
+ ['Create Quotation for AAA','Task','2026-10-12T12:00','AAA TILES INC.','LKCMB - NLRTM','Hrucha Malusare','C'],
+ ['Customs documents','Task','2026-10-14T15:00','AlFares Cargo Service & Clearanc','','Hrucha Malusare','C'],
+ ['Email to Silverlines','Email','2026-10-21T08:00','Silverlines Global Pte. Ltd.','','Rashed Saad','C'],
+ ...XACTS
+ ].map((a,i)=>({id:'T'+(i+1),title:a[0],type:a[1],dt:a[2],party:a[3],opp:a[4],owner:a[5],branch:a[6],status:['Call 2','Meeting with McLaren','Create Quotation','Called Mr. Tagore'].includes(a[0])?'Completed':'In Progress',pri:'Low'}));
+ return {leads,opps,contacts,acts};
+}
+/* ============ column definitions ============ */
+const flame='<svg class="ico" viewBox="0 0 24 24" fill="#ef3b2d"><path d="M12 2c1 4-3 5-3 9a3 3 0 0 0 6 0c0-1-.5-2-1-3 3 1 5 4 5 7a7 7 0 0 1-14 0c0-6 5-8 7-13z"/></svg>';
+const stageClr={New:'#2f2fc4',Contacted:'#3aa3d6'};
+const pill=(t,c)=>t?`<span class="pill" style="background:${c}">${t}</span>`:'--';
+const two=(a,b)=>`<b>${a}</b><small>${b}</small>`;
+const dash=v=>v||'--';
+const typeClr={Email:['#4f46e5','✉'],Call:['#2f8f83','✆'],Meeting:['#37b6e0','☺'],Task:['#2f6fd6','☰']};
+const COLDEFS={
+ leads:[
+  {k:'id',t:'Lead ID',v:r=>r.id},
+  {k:'company',t:'Company Name',v:r=>r.name,h:r=>two(r.name,r.loc),w:260,link:1},
+  {k:'short',t:'Short Name',v:r=>'--'},{k:'legal',t:'Legal Name',v:r=>'--'},
+  {k:'stage',t:'Lead Stage',v:r=>r.stage,h:r=>pill(r.stage,stageClr[r.stage])},
+  {k:'status',t:'Status',v:r=>r.status,h:r=>pill(r.status,r.status=='Active'?'#4bb543':'#ee6b6b')},
+  {k:'temp',t:'Lead Temperature',v:r=>r.temp,h:r=>r.temp?flame:'--'},
+  {k:'owner',t:'Lead Owner',v:r=>r.owner,h:r=>dash(r.owner)}],
+ opps:[
+  {k:'name',t:'Name',v:r=>r.n,link:1},{k:'lane',t:'Trade Lane',v:r=>r.lane,h:r=>dash(r.lane)},
+  {k:'party',t:'Party',v:r=>r.party,h:r=>two(r.party,r.ploc)},
+  {k:'orig',t:'Origin Country',v:r=>r.orig,h:r=>dash(r.orig)},{k:'dest',t:'Destination Country',v:r=>r.dest,h:r=>dash(r.dest)},
+  {k:'owner',t:'Owner',v:r=>r.owner},{k:'contact',t:'Contacts',v:r=>r.contact,h:r=>dash(r.contact)}],
+ contacts:[
+  {k:'name',t:'Contact Name',v:r=>r.n,link:1},{k:'party',t:'Party',v:r=>r.party,h:r=>two(r.party,r.ploc),w:300},
+  {k:'owner',t:'Owner',v:r=>r.owner,h:r=>dash(r.owner)},{k:'email',t:'Email',v:r=>r.email},
+  {k:'phone',t:'Phone No. (Primary)',v:r=>r.phone,h:r=>dash(r.phone)},{k:'by',t:'Created By',v:r=>r.by}],
+ acts:[
+  {k:'title',t:'Title',v:r=>r.title,link:1},
+  {k:'type',t:'Activity Type',v:r=>r.type,h:r=>`<span class="pill" style="background:${typeClr[r.type][0]}">${typeClr[r.type][1]} ${r.type}</span>`},
+  {k:'date',t:'Activity Date',v:r=>fdt(r.dt),sv:r=>r.dt},
+  {k:'status',t:'Activity Status',v:r=>r.status,h:r=>pill(r.status,r.status=='Completed'?'#6b7280':'#4bb87a')},
+  {k:'party',t:'Party',v:r=>r.party},{k:'opp',t:'Opportunity',v:r=>r.opp,h:r=>dash(r.opp)}]
+};
+COLDEFS.oppsEmb=[{k:'name',t:'Name',v:r=>r.n},{k:'lane',t:'Trade Lane',v:r=>r.lane,h:r=>dash(r.lane)},{k:'party',t:'Party',v:r=>r.party,h:r=>two(r.party,r.ploc)},
+ {k:'stage',t:'Stage',v:r=>r.stage,h:r=>`<span class="pill" style="background:${oStg(r.stage)};border-radius:14px;padding:3px 16px">${r.stage}</span>`},
+ {k:'rev',t:'Expected Revenue',v:r=>r.rev},{k:'close',t:'Estimated Closure Date',v:r=>fday(r.closure)},{k:'owner',t:'Owner',v:r=>r.owner},{k:'prob',t:'Probability (%)',v:r=>String(r.prob)}];
+const BRCOL={k:'branch',t:'Branch',v:r=>BR[r.branch].n,w:200};
+const LD={
+ leads:{title:'Leads',create:'Create Lead',ph:'Search Leads...',data:'leads',fav:1,range:[['2026-09-27','2026-10-27'],['2026-10-15','2026-10-27']],dt:r=>r.d,star:1},
+ opps:{title:'Opportunities',create:'Create Opportunity',ph:'Search Opportunities',data:'opps',mine:1,range:[['2026-09-27','2026-10-27'],['2026-10-15','2026-10-27']],dt:r=>r.d},
+ contacts:{title:'Contacts',create:'Create Contact',ph:'Search Contacts',data:'contacts',range:[['2026-09-27','2026-10-27'],['2026-10-15','2026-10-27']],dt:r=>r.d},
+ acts:{title:'Activities',create:'Create Activity',ph:'Search Activities',data:'acts',mine:1,tabs:1,range:[['2026-10-01','2026-10-31'],['2026-10-01','2026-10-15']],dt:r=>r.dt.slice(0,10)}
+};
+const KIND={leads:'lead',opps:'opp',contacts:'contact',acts:'act'};
+/* ============ state ============ */
+let S,T={};
+const $=id=>document.getElementById(id);
+function newL(){return {sel:[S?S.lb:'A'],q:'',cf:{},sort:null,page:1,size:10,fav:false,range:0,mine:false,tab:'all'}}
+function newCols(){const c={};['leads','opps','contacts','acts'].forEach(k=>c[k]={order:['branch',...COLDEFS[k].map(x=>x.k)],hidden:{}});c.oppsEmb={order:COLDEFS.oppsEmb.map(x=>x.k),hidden:{}};return c}
+function init(keep){
+ const ui=keep?{roleOff:S.roleOff,calAB:S.calAB}:{roleOff:false,calAB:true};
+ S={user:1,lb:'A',screen:'leads',det:null,data:seed(),bf:{open:null,q:''},loading:false,note:null,guide:false,drawer:null,calM:9,cols:newCols(),sideOpen:false,emb:{q:''},calSel:CALU.map(x=>x[0]),calExp:{},calDD:false,setTab:'Lead Stage',...ui};
+ S.L={leads:newL(),opps:newL(),contacts:newL(),acts:newL()};
+}
+const access=()=>S.user==1?ORDER:['A'];
+const brName=b=>BR[b].n;
+function resetLists(){S.calSel=CALU.map(x=>x[0]);S.calExp={};S.calDD=false;['leads','opps','contacts','acts'].forEach(k=>{S.L[k]=newL();});S.bf={open:null,q:''};S.drawer=null;S.pop=null}
+/* ============ helpers ============ */
+const svg=(p,c='')=>`<svg class="ico ${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const I={
+ search:svg('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/>'),
+ star:svg('<path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.3l1.1-6.2L3 9.7l6.2-.9z"/>'),
+ starF:'<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.3l1.1-6.2L3 9.7l6.2-.9z"/></svg>',
+ filter:svg('<path d="M3 4h18l-7 9v6l-4 2v-8z"/>'),
+ cal:svg('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
+ cols:svg('<path d="M4 6h4M4 12h4M4 18h4M11 6h9M11 12h9M11 18h9"/>'),
+ dots:'<svg class="ico" viewBox="0 0 24 24" fill="#222"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+ plus:svg('<path d="M12 5v14M5 12h14"/>'),
+ folder:'<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+ sq:'<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="3" opacity=".85"/></svg>',
+ clock:svg('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>'),
+ phone:svg('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>'),
+ mail:svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
+ user:svg('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+ task:svg('<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/>')
+};
+const dp=(cls='')=>`<span class="dp ${cls}">design pending</span>`;
+function toast(msg,kind){const d=document.createElement('div');d.className='toast '+kind;d.textContent=msg;$('toast').appendChild(d);setTimeout(()=>d.remove(),3000)}
+function guard(branch,label){
+ if(branch!==S.lb){toast(MSG_BLOCK,'r');return false}
+ toast(label+': allowed (prototype, no real save)','g');return true}
+const find=(k,id)=>S.data[LD[k]?LD[k].data:k].find(r=>r.id===id);
+/* ============ data pipeline ============ */
+function cols(key){const L=S.L[key],C=S.cols[key];return C.order.filter(k=>k=='branch'?(L.sel.length>=2&&S.user==1&&!C.hidden.branch):!C.hidden[k]).map(k=>k=='branch'?BRCOL:COLDEFS[key].find(c=>c.k==k))}
+function rowsFor(key,ignoreTab){
+ const L=S.L[key],D=LD[key],[a,b]=D.range[L.range];
+ let r=S.data[D.data].filter(x=>L.sel.includes(x.branch)&&D.dt(x)>=a&&D.dt(x)<=b);
+ if(D.mine&&L.mine)r=r.filter(x=>x.owner==ME);
+ if(D.fav&&L.fav)r=r.filter(x=>x.fav);
+ const defs=[BRCOL,...COLDEFS[key]];
+ if(L.q){const q=L.q.toLowerCase();r=r.filter(x=>defs.map(c=>c.v(x)).join(' ').toLowerCase().includes(q))}
+ Object.keys(L.cf).forEach(k=>{const c=defs.find(c=>c.k==k);r=r.filter(x=>String(c.v(x)).toLowerCase().includes(L.cf[k].toLowerCase()))});
+ if(D.tabs&&!ignoreTab&&L.tab!='all')r=r.filter(x=>x.type==L.tab);
+ if(L.sort){const c=defs.find(c=>c.k==L.sort.k),f=c.sv||c.v,d=L.sort.dir=='asc'?1:-1;r=[...r].sort((x,y)=>String(f(x)).localeCompare(String(f(y)),undefined,{numeric:true})*d)}
+ return r}
+/* ============ branch filter ============ */
+function toggleBranch(key,b){const L=S.L[key];L.sel=L.sel.includes(b)?L.sel.filter(x=>x!=b):ORDER.filter(x=>x==b||L.sel.includes(x));branchChanged(key)}
+function selAll(key){const L=S.L[key];L.sel=L.sel.length==access().length?[]:[...access()];branchChanged(key)}
+function removeFirst(key,e){e.stopPropagation();S.L[key].sel.shift();branchChanged(key)}
+function clearAll(key,e){e.stopPropagation();S.L[key].sel=[];branchChanged(key)}
+function branchChanged(key){
+ const L=S.L[key],C=S.cols[key];
+ L.cf={};L.q='';L.page=1;if(LD[key].fav)L.fav=false;if(LD[key].tabs)L.tab='all';
+ if(L.sel.length<2)C.hidden.branch=false;
+ if(L.sort&&L.sort.k=='branch'&&L.sel.length<2)L.sort=null;
+ setLoading()}
+function setLoading(){S.loading=true;render();clearTimeout(T.l);T.l=setTimeout(()=>{S.loading=false;render()},550)}
+function bfOpen(key,e){e.stopPropagation();if(S.bf.open!=key){S.bf.open=key;S.bf.q='';render()}}
+function bfToggle(key,e){e.stopPropagation();S.bf.open=S.bf.open==key?null:key;S.bf.q='';render()}
+function bfHTML(key){
+ const L=S.L[key],open=S.bf.open==key,sel=L.sel;
+ const rest=sel.slice(1);
+ const chip=sel.length?`<span class="chip" title="${brName(sel[0])}"><span class="cx" onclick="removeFirst('${key}',event)">✕</span><span class="t">${brName(sel[0])}</span></span>`:'';
+ const badge=rest.length?`<span class="badge" onclick="bfOpen('${key}',event)">+${rest.length}<span class="tip">${rest.map(b=>`<div>${brName(b)}</div>`).join('')}</span></span>`:'';
+ const q=S.bf.q.toLowerCase();
+ const opts=access().filter(b=>(brName(b)+' '+BR[b].c).toLowerCase().includes(q));
+ const all=sel.length==access().length;
+ const dd=open?`<div class="dd"><div class="opt all" onclick="selAll('${key}')"><span class="cb ${all?'on':''}"></span>Select All</div>${opts.map(b=>`<div class="opt" onclick="toggleBranch('${key}','${b}')"><span class="cb ${sel.includes(b)?'on':''}"></span><div>${brName(b)}<div class="s">${BR[b].c}</div></div></div>`).join('')||'<div class="opt s">No options found</div>'}</div>`:'';
+ return `<div class="bf ${open?'open':''}" onclick="bfOpen('${key}',event)">${chip}${badge}<input id="bfinput" value="${S.bf.q.replace(/"/g,'&quot;')}" placeholder="${sel.length?'':'Select Branch'}" oninput="bfType('${key}',this.value)" autocomplete="off">${sel.length?`<span class="ca" title="Clear All" onclick="clearAll('${key}',event)">✕</span>`:''}<span class="ca" onclick="bfToggle('${key}',event)">▾</span></div>${dd}`}
+function bfType(key,v){S.bf.q=v;const w=$('bfwrap');w.innerHTML=bfHTML(key);const i=$('bfinput');i.focus();i.setSelectionRange(v.length,v.length)}
+/* ============ listing render ============ */
+function sideHTML(){
+ const nav=(k,l,i)=>`<div class="nv ${S.screen==k||(k=='leads'&&S.screen=='leadD')||(k=='opps'&&S.screen=='oppD')?'on':''}" onclick="go('${k}')">${i}${l}</div>`;
+ const top=(l,i,x)=>`<div class="nv">${i}${l}<span class="ar">${x||'▶'}</span></div>`;
+ return `<div class="brand"><div class="lg">✈</div>FREIGHTOSCOPE<span class="x">✕</span></div>
+ <div class="sjob"><div class="in">Search Job #...</div><div class="tg">JOB# ▾</div><div class="go">${I.search}</div></div>
+ ${top('Dashboard',I.sq)}${top('Admin',I.sq)}${top('Masters',I.sq)}
+ <div class="nv" style="opacity:.8">${I.sq}Sales<span class="ar">▼</span></div>
+ <div class="sub">${nav('leads','Leads',I.folder)}${nav('opps','Opportunities',I.folder)}${nav('acts','Activities',I.folder)}${nav('cal','Calendar',I.cal)}${nav('contacts','Contacts',I.folder)}${nav('settings','Settings',I.folder)}</div>
+ ${top('Pricing',I.folder)}${top('Operations',I.sq)}${top('Accounts',I.sq)}${top('Reports',I.sq)}
+ <div class="sbot"><span>⟲</span><span>✔</span><span>●</span><span>🔔</span><span>⇄</span><span>⏻</span></div>`}
+function go(k){S.sideOpen=false;S.emb={q:''};S.screen=k;S.det=null;S.drawer=null;S.pop=null;resetLists();render();$('main').scrollTop=0}
+function listHTML(key){
+ const D=LD[key],L=S.L[key];
+ const bfs=S.user==1?`<div class="bfw" id="bfwrap">${bfHTML(key)}</div>`:'';
+ const [a,b]=D.range[L.range],fmt=s=>{const [y,m,d]=s.split('-');return `${+m}/${+d}/${y}`};
+ const fav=D.fav?`<button class="fb ${L.fav?'on':''}" onclick="togShowFav()">${L.fav?I.starF:I.star} Show Favorite</button>`:'';
+ const am=D.mine?`<div class="allmy"><button class="${!L.mine?'on':''}" onclick="setMine(false)">All</button><button class="${L.mine?'on':''}" onclick="setMine(true)">My</button></div>`:'';
+ const rng=`<button class="fb rng" onclick="rangePop(event)">${I.cal}<span>${fmt(a)} - ${fmt(b)}</span><span style="color:#999;font-size:10px">▼</span></button>`;
+ return `<div class="ph"><h1>${D.title}</h1><button class="cbtn" onclick="toast('${D.create}: form opens (prototype, not built)','g')">${I.plus} ${D.create}</button></div>
+ <div class="card"><div class="frow">
+  <div class="search">${I.search}<input id="gs" placeholder="${D.ph}" value="${L.q.replace(/"/g,'&quot;')}" oninput="setQ(this.value)"></div>
+  <div class="sp"></div>${bfs}${fav}${am}${rng}</div>
+  <div id="tblwrap">${tblHTML(key)}</div></div>`}
+function tblHTML(key){
+ const D=LD[key],L=S.L[key],all=rowsFor(key),cs=cols(key);
+ const tot=all.length,pages=Math.max(1,Math.ceil(tot/L.size));if(L.page>pages)L.page=pages;
+ const rows=all.slice((L.page-1)*L.size,L.page*L.size),st=(L.page-1)*L.size;
+ let tabs='';
+ if(D.tabs){const base=rowsFor(key,true),n=t=>t=='all'?base.length:base.filter(x=>x.type==t).length;
+  const T2=[['all','All Activities',I.clock],['Call','Calls',I.phone],['Email','Emails',I.mail],['Meeting','Meetings',I.user],['Task','Tasks',I.task]];
+  tabs=`<div class="tabs">${T2.map(t=>`<button class="${L.tab==t[0]?'on':''}" onclick="setTab('${t[0]}')">${t[2]}${t[1]} (${n(t[0])})</button>`).join('')}</div>`}
+ const th=cs.map(c=>`<th><span class="th"><span class="s" onclick="setSort('${c.k}')">${c.t}${L.sort&&L.sort.k==c.k?`<span class="sa"> ${L.sort.dir=='asc'?'▲':'▼'}</span>`:''}</span><span class="fi ${L.cf[c.k]?'act':''}" data-pb onclick="colFilter(event,'${c.k}')">${I.filter}</span></span></th>`).join('');
+ const body=rows.map(r=>{
+  const kind=KIND[key],tds=cs.map(c=>`<td style="${c.w?'min-width:'+c.w+'px;':''}${c.link?'cursor:pointer':''}" ${c.link?`onclick="openRow('${kind}','${r.id}')"`:''}>${c.h?c.h(r):dash(c.v(r))}</td>`).join('');
+  const star=D.star?`<td style="width:44px"><span class="st ${r.fav?'on':''}" onclick="event.stopPropagation();favTog('${r.id}')">${r.fav?I.starF:I.star}</span></td>`:'';
+  return `<tr class="cl"><td style="width:54px"><span class="rb" data-pb onclick="rowMenu(event,'${kind}','${r.id}')">${I.dots}</span></td>${star}${tds}</tr>`}).join('');
+ const empty=!rows.length?`<div class="empty">No Data Found</div>`:'';
+ return `${tabs}<div class="tw"><table class="t"><thead><tr><th style="width:54px"><span style="cursor:pointer" onclick="openColSet('${key}')">${I.cols}</span></th>${D.star?'<th style="width:44px"></th>':''}${th}</tr></thead><tbody>${body}</tbody></table>${empty}</div>
+ <div class="foot"><div>Items per page: <select onchange="setSize(this.value)">${[10,25,50].map(n=>`<option ${n==L.size?'selected':''}>${n}</option>`).join('')}</select></div>
+ <div class="pg"><span>${tot?`${st+1}-${st+rows.length} of ${tot}`:'0 of 0'}</span><button ${L.page<=1?'disabled':''} onclick="setPage(-1)">‹</button><button ${L.page>=pages?'disabled':''} onclick="setPage(1)">›</button></div></div>
+ ${S.loading?`<div class="ov"><div class="sp2"></div>${dp('abs')}</div>`:''}`}
+function refreshTbl(){const key=S.screen;const w=$('tblwrap');if(w)w.innerHTML=tblHTML(key)}
+function cur(){return S.L[S.screen]}
+function setQ(v){const L=cur();L.q=v;L.page=1;refreshTbl()}
+function setSort(k){const L=cur();L.sort=L.sort&&L.sort.k==k?(L.sort.dir=='asc'?{k,dir:'desc'}:null):{k,dir:'asc'};L.page=1;refreshTbl()}
+function setPage(d){cur().page+=d;refreshTbl()}
+function setSize(v){const L=cur();L.size=+v;L.page=1;refreshTbl()}
+function setTab(t){const L=cur();L.tab=t;L.page=1;refreshTbl()}
+function setMine(v){const L=cur();L.mine=v;L.page=1;render()}
+function togShowFav(){const L=cur();L.fav=!L.fav;L.page=1;render()}
+function favTog(id){const r=find('leads',id);r.fav=!r.fav;refreshTbl()}
+function rangePop(e){e.stopPropagation();const D=LD[S.screen],fmt=s=>{const [y,m,d]=s.split('-');return `${+m}/${+d}/${y}`};
+ showPop(e,`<div class="menu">${D.range.map((r,i)=>`<div onclick="setRange(${i})">${fmt(r[0])} - ${fmt(r[1])}</div>`).join('')}<div style="color:#888;font-size:11px;cursor:default">Calendar picker ${dp()}</div></div>`)}
+function setRange(i){const L=cur();L.range=i;L.page=1;S.pop=null;render()}
+function colFilter(e,k){e.stopPropagation();const L=cur();
+ showPop(e,`<div class="fpop"><input id="cfin" value="${(L.cf[k]||'').replace(/"/g,'&quot;')}" placeholder="Filter ${k}" onkeydown="if(event.key=='Enter')applyCF('${k}')"><div class="r"><button class="sb" onclick="clearCF('${k}')">Clear</button><button class="sb p" onclick="applyCF('${k}')">Apply</button></div>${dp()}</div>`);setTimeout(()=>{const i=$('cfin');i&&i.focus()},0)}
+function applyCF(k){const L=cur(),v=$('cfin').value.trim();if(v)L.cf[k]=v;else delete L.cf[k];L.page=1;S.pop=null;renderPop();refreshTbl()}
+function clearCF(k){delete cur().cf[k];cur().page=1;S.pop=null;renderPop();refreshTbl()}
+/* ============ popups ============ */
+function showPop(e,html){e.stopPropagation();const r=e.currentTarget.getBoundingClientRect();S.pop={x:Math.min(r.left,innerWidth-260),y:r.bottom+4,html};renderPop()}
+function renderPop(){const p=$('pop');if(!S.pop){p.innerHTML='';return}p.style.left=S.pop.x+'px';p.style.top=S.pop.y+'px';p.innerHTML=S.pop.html}
+const MENUS={
+ lead:r=>['View','Edit',r.status=='Active'?'Deactivate':'Activate'],opp:()=>['View','Edit','Delete'],contact:()=>['View','Edit','Delete'],
+ act:()=>['View','Edit','Delete','Duplicate'],cleadc:()=>['View','Edit','Delete','Mark as Primary'],feed:()=>['View Activity','Edit','Delete','Duplicate']};
+function rowMenu(e,kind,id,menu){const r=kind=='contact'?find('contacts',id):find(kind=='lead'?'leads':kind=='opp'?'opps':kind=='act'?'acts':'contacts',id);
+ const m=MENUS[menu||kind](r);
+ showPop(e,`<div class="menu">${m.map(a=>`<div onclick="doAct('${kind}','${id}','${a}')">${a}${a=='View'||a=='Edit'?'':''}</div>`).join('')}<div style="font-size:10px;color:#999;cursor:default">menu ${dp()}</div></div>`)}
+function openRow(kind,id){doAct(kind,id,'View')}
+const LBL={lead:'Lead',opp:'Opportunity',contact:'Contact',act:'Activity'};
+function doAct(kind,id,a,fromCal){
+ S.pop=null;renderPop();
+ const r=find(kind=='lead'?'leads':kind=='opp'?'opps':kind=='act'?'acts':'contacts',id);
+ if(a=='View'||a=='View Activity'){
+  if(kind=='lead'){S.screen='leadD';S.emb={q:''};S.det={id,tab:'Lead Details',atab:'all'};resetLists();render();$('main').scrollTop=0}
+  else if(kind=='opp'){S.screen='oppD';S.det={id,atab:'all'};resetLists();render();$('main').scrollTop=0}
+  else{S.drawer={type:kind,id,cal:!!fromCal};render()}
+  return}
+ const br=(kind=='act'&&S.screen=='oppD')?find('opps',S.det.id).branch:r.branch;
+ if(kind=='act'&&a=='Edit'&&br!==S.lb&&S.roleOff){toast(MSG_PERM,'r');return}
+ if(guard(br,a+' '+LBL[kind])&&kind=='lead'&&(a=='Deactivate'||a=='Activate')){r.status=a=='Deactivate'?'Inactive':'Active';render()}
+}
+/* ============ Column Settings drawer ============ */
+function openColSet(key){S.drawer={type:'cols',key};render()}
+function colSetHTML(key){
+ const L=S.L[key]||{sel:[]},C=S.cols[key],defs=key=='oppsEmb'?COLDEFS.oppsEmb:[BRCOL,...COLDEFS[key]];
+ const showBr=key!='oppsEmb'&&L.sel.length>=2&&S.user==1;
+ const items=C.order.filter(k=>k!='branch'||showBr);
+ return `<div class="drb" onclick="closeDrawer()"></div><div class="dr n"><div class="hd"><h2>Column Settings ${dp()}</h2><button class="xb" onclick="closeDrawer()">✕</button></div><div class="bd">${items.map(k=>{const c=defs.find(d=>d.k==k),on=!C.hidden[k];
+ return `<div class="cr" draggable="true" ondragstart="T.drag='${k}'" ondragover="event.preventDefault()" ondrop="dropCol('${key}','${k}')"><span class="h">⋮⋮</span><span class="cb ${on?'on':''}" onclick="togCol('${key}','${k}')"></span>${c.t}</div>`}).join('')}</div><div class="ft"><button class="btn2 p" onclick="closeDrawer()">Done</button></div></div>`}
+function togCol(key,k){const C=S.cols[key];C.hidden[k]=!C.hidden[k];if(k=='branch'&&C.hidden.branch){delete S.L[key].cf.branch;if(S.L[key].sort&&S.L[key].sort.k=='branch')S.L[key].sort=null}render()}
+function dropCol(key,k){const C=S.cols[key],f=T.drag;if(!f||f==k)return;C.order=C.order.filter(x=>x!=f);C.order.splice(C.order.indexOf(k),0,f);render()}
+function closeDrawer(){S.drawer=null;render()}
+/* ============ view drawers ============ */
+const XR='<button class="xr" onclick="closeDrawer()">✕</button>';
+const fl=(l,v,ph,o)=>{o=o||{};return `<div class="fl ${o.full?'full':''}"><label>${l}${o.req?'<span class="rq">*</span>':''}</label><div class="fi2 ${o.sel?'sel':''} ${o.area?'area':''}">${v?v:`<span class="ph2">${ph||''}</span>`}</div></div>`};
+function drawerHTML(){
+ const d=S.drawer;if(!d)return '';
+ if(d.type=='cols')return colSetHTML(d.key);
+ if(d.type=='contact'){
+  const r=find('contacts',d.id),sp=r.n.indexOf(' '),fn=sp<0?r.n:r.n.slice(0,sp),ln=sp<0?'':r.n.slice(sp+1);
+  return `<div class="drb" onclick="closeDrawer()"></div><div class="dr"><div class="hd"><h2>View Contact</h2>${XR}</div><div class="bd"><div class="g2">${fl('First Name',fn,'',{req:1})}${fl('Last Name',ln,'',{req:1})}${fl('Email',r.email,'',{req:1})}${fl('Phone No. (Primary)',r.phone=='--'?'':r.phone,'Enter Phone No.')}${fl('Owner',r.owner=='--'?'':r.owner,'',{req:1,sel:1})}${fl('Source','Advertisement','',{req:1,sel:1})}${fl('Party',r.party,'',{req:1,sel:1})}</div><hr class="hr"><div class="acc">Additional Details<span>⌄</span></div><div class="g2">${fl('Notes','','Enter Notes',{full:1,area:1})}</div></div><div class="ft"><button class="btn2 g" onclick="closeDrawer()">Cancel</button><button class="btn2 p" onclick="doAct('contact','${r.id}','Edit')">Edit</button></div></div>`}
+const r=find('acts',d.id),ty=r.type;
+ const dur=`<div class="fl"><label>Duration</label><div class="dur"><div class="fi2"><span class="ph2">HH</span></div><b>h</b><div class="fi2"><span class="ph2">MM</span></div><b>m</b></div></div>`;
+ const row2=ty=='Call'?`${fl('Date and Time',fdt(r.dt),'',{req:1})}${dur}${fl('Remind before','No Reminder','',{sel:1})}${fl('Reminder Date and Time','','')}${fl('Direction','Outgoing','',{sel:1})}${fl('Purpose','','Select Call Purpose',{sel:1})}${fl('Outcome','','Select Call Outcome',{sel:1})}${fl('Status',r.status,'',{req:1,sel:1})}`
+  :`${fl('Date and Time',fdt(r.dt),'',{req:1})}${fl('Direction','Outgoing','',{sel:1})}${fl('Remind before','No Reminder','',{sel:1})}${fl('Reminder Date and Time','','')}${fl('Subject','','',{full:1})}${fl('Outcome','','Select '+ty+' Outcome',{sel:1})}${fl('Status',r.status,'',{req:1,sel:1})}`;
+ return `<div class="drb" onclick="closeDrawer()"></div><div class="dr"><div class="hd"><h2>View ${ty} Log</h2>${XR}</div><div class="bd"><div class="g2">${fl('Title',r.title,'',{req:1,full:1})}${fl('Party',r.party,'',{req:1,sel:1})}${fl('Opportunity',r.opp,'Select Opportunity',{sel:1})}${fl('Contacts','','Select Contacts',{full:1,sel:1})}${row2}${fl('Priority',r.pri,'',{sel:1})}${fl('Owner',r.owner,'',{req:1,sel:1})}${fl('Other Team Members','','Select Team Members',{full:1,sel:1})}${fl('Notes','','Enter notes',{full:1,area:1})}</div></div><div class="ft sp"><button class="btn2 dl2" onclick="doAct('act','${r.id}','Delete')">Delete</button><div style="display:flex;gap:10px"><button class="btn2 g" onclick="closeDrawer()">Cancel</button><button class="btn2 p" onclick="doAct('act','${r.id}','Edit')">Edit</button></div></div></div>`}
+/* ============ detail screens ============ */
+Object.assign(I,{
+ bld:svg('<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>'),
+ pin:svg('<path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10z"/><circle cx="12" cy="11" r="2"/>'),
+ pen:svg('<path d="M4 20h4L19 9l-4-4L4 16z"/>'),
+ plusc:svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>'),
+ file:svg('<path d="M6 3h8l4 4v14H6z"/>'),
+ note:svg('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>'),
+ minus:svg('<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>'),
+ chL:svg('<path d="M15 5l-7 7 7 7"/>'),chR:svg('<path d="M9 5l7 7-7 7"/>')});
+const ACI={Email:['#6f6ef0',I.mail],Call:['#2f8f83',I.phone],Meeting:['#37b6e0',I.user],Task:['#3b8fe0',I.task]};
+function actItem(r){const [c,ic]=ACI[r.type],ini=r.owner.split(' ').map(w=>w[0]).join('').slice(0,2);
+ return `<div class="ai"><div class="aic" style="background:${c}">${ic}</div><div class="aim"><div class="ait"><b>${r.title}</b>${r.status=='In Progress'?'<span class="pill gn">In Progress</span>':'<span class="pill gy" title="Completed">&nbsp;</span>'}</div><div class="aio"><span class="av">${ini}</span><span>${r.owner}</span><span class="pr">${r.pri}</span></div></div><div class="aid">${fdt(r.dt)}</div><span class="rb" data-pb onclick="rowMenu(event,'act','${r.id}','feed')">${I.dots}</span></div>`}
+const addBtn=(b,l)=>`<button class="fb addn" onclick="guard('${b}','${l}')">${I.plusc} Add New</button>`;
+function actPanel(list,b,lead){
+ const at=S.det.atab||'all';
+ const TB=[['all',lead?'Activities':'All',I.clock],['Call','Calls',I.phone],['Email','Emails',I.mail],['Meeting','Meetings',I.user],['Task','Tasks',I.task]];
+ if(lead)TB.push(['files','Files',I.file]);TB.push(['notes','Notes',I.note]);
+ const rng=`<span class="fb rng2">${I.cal}<span>10/1/2026 - 10/31/2026</span><span style="color:#999;font-size:10px">▼</span></span>`;
+ let body;
+ if(at=='files')body=`<div class="ah"><h3>Files</h3><div class="ar">${addBtn(b,'Add New File')}</div></div><div class="sbox"><div class="ai"><div class="aic" style="background:#8a94a6">${I.file}</div><div class="aim"><div class="ait"><b>Rate-sheet.pdf</b></div><div class="aio"><span>${ME}</span></div></div><span><button class="sb" onclick="toast('Preview File: allowed (prototype)','g')">Preview File</button> <button class="sb" onclick="toast('Download File: allowed (prototype)','g')">Download File</button></span></div></div>`;
+ else if(at=='notes')body=`<div class="ah"><h3>Notes</h3><div class="ar">${addBtn(b,lead?'Add New Note':'Add Note')}</div></div><div class="sbox"><div class="ai"><div class="aic" style="background:#8a94a6">${I.note}</div><div class="aim"><div class="ait"><b>Customer asked for revised rates.</b></div><div class="aio"><span>${ME}</span></div></div></div></div>`;
+ else{const f=list.filter(x=>at=='all'||x.type==at).sort((x,y)=>y.dt.localeCompare(x.dt));
+  const up=f.filter(x=>x.dt.slice(0,10)>'2026-10-27'),past=f.filter(x=>x.dt.slice(0,10)<='2026-10-27');
+  const box=(l,arr,msg)=>`<div class="sec">${l}</div><div class="sbox">${arr.length?arr.map(actItem).join(''):`<div class="se"><span class="mc">${I.minus}</span>${msg}</div>`}</div>`;
+  body=`<div class="ah"><h3>${at=='all'?'All Activities':TB.find(t=>t[0]==at)[1]}</h3><div class="ar">${addBtn(b,'Add New Activity')}${rng}</div></div>${box('Upcoming',up,'No upcoming activities')}${box('Past',past,'No past activities')}`}
+ return `<div class="atabs">${TB.map(t=>`<button class="${at==t[0]?'on':''}" onclick="S.det.atab='${t[0]}';render()">${t[2]}${t[1]}</button>`).join('')}</div><div class="apan">${body}</div>`}
+function pipe(id,list,cur,label,b){return `<div class="pl"><button class="pn" onclick="pipeScroll('${id}',-1)">${I.chL}</button><div class="pv" id="${id}">${list.map(x=>`<div class="ch" style="--c:${x[1]}" onclick="guard('${b}','${label}')"><div class="${x[0]==cur?'cur':''}">${x[0]}</div></div>`).join('')}</div><button class="pn" onclick="pipeScroll('${id}',1)">${I.chR}</button></div>`}
+function pipeScroll(id,d){$(id).scrollBy({left:d*190,behavior:'smooth'})}
+const ir=(l,v)=>`<div class="ir"><span>${l}</span><span>${v}</span></div>`;
+const efoot=n=>`<div class="foot"><div>Items per page: <select><option>25</option></select></div><div class="pg"><span>${n?`1-${n}of${n}`:'0 of 0'}</span><button disabled>‹</button><button disabled>›</button></div></div>`;
+function colsEmb(){return S.cols.oppsEmb.order.filter(k=>!S.cols.oppsEmb.hidden[k]).map(k=>COLDEFS.oppsEmb.find(c=>c.k==k))}
+const rbtn=(kind,id,menu)=>`<td><span class="rb" data-pb onclick="rowMenu(event,'${kind}','${id}','${menu||kind}')">${I.dots}</span></td>`;
+function embInner(){
+ const r=find('leads',S.det.id),t=S.det.tab,q=S.emb.q.toLowerCase();
+ if(t=='Opportunities'){const cs=colsEmb(),os=S.data.opps.filter(o=>o.party==r.name).filter(o=>!q||cs.map(c=>c.v(o)).join(' ').toLowerCase().includes(q));
+  return `<div class="tw"><table class="t" style="min-width:1000px"><thead><tr><th style="width:54px"><span style="cursor:pointer" onclick="openColSet('oppsEmb')">${I.cols}</span></th>${cs.map(c=>`<th><span class="th">${c.t}<span class="fi">${I.filter}</span></span></th>`).join('')}</tr></thead><tbody>${os.map(o=>`<tr>${rbtn('opp',o.id)}${cs.map(c=>`<td ${c.k=='name'?`style="cursor:pointer" onclick="doAct('opp','${o.id}','View')"`:''}>${c.h?c.h(o):dash(c.v(o))}</td>`).join('')}</tr>`).join('')}</tbody></table>${os.length?'':'<div class="empty">No Data Found</div>'}</div>${efoot(os.length)}`}
+ const cs=S.data.contacts.filter(c=>c.party==r.name).filter(c=>!q||[c.n,c.party,c.owner,c.email,c.phone,c.by].join(' ').toLowerCase().includes(q)),pid=(S.data.contacts.find(c=>c.party==r.name)||{}).id;
+ const hs=['Contact Name','Party','Owner','Email','Phone No. (Primary)','Created By','Created Date'];
+ return `<div class="tw"><table class="t" style="min-width:1100px"><thead><tr><th style="width:54px"><span>${I.cols}</span></th><th>Primary</th>${hs.map(h=>`<th><span class="th">${h}<span class="fi">${I.filter}</span></span></th>`).join('')}</tr></thead><tbody>${cs.map(c=>`<tr>${rbtn('contact',c.id,'cleadc')}<td><span class="cb ${c.id==pid?'on':''}"></span></td><td style="cursor:pointer" onclick="doAct('contact','${c.id}','View')">${c.n}</td><td>${two(c.party,c.ploc)}</td><td>${dash(c.owner)}</td><td>${c.email}</td><td>${dash(c.phone)}</td><td>${c.by}</td><td>${fdt(c.d+'T14:10')}</td></tr>`).join('')}</tbody></table>${cs.length?'':'<div class="empty">No Data Found</div>'}</div>${efoot(cs.length)}`}
+function embQ(v){S.emb.q=v;$('embtbl').innerHTML=embInner()}
+const topbar=(title,back,right)=>`<div class="dtop"><div class="dl"><button class="bkc" onclick="go('${back}')">${I.chL}</button><h1>${title}</h1></div><div class="dr2">${right||''}</div></div>`;
+function leadDHTML(){
+ const r=find('leads',S.det.id),b=r.branch,t=S.det.tab||'Lead Details';
+ const os=S.data.opps.filter(o=>o.party==r.name),cs=S.data.contacts.filter(c=>c.party==r.name),pc=cs[0];
+ const feed=S.data.acts.filter(x=>x.party==r.name);
+ const right=`<button class="rbtn" onclick="leadToggle('${r.id}')">${r.status=='Active'?'Deactivate':'Activate'}</button><button class="cbtn" onclick="guard('${b}','Convert To Party')">Convert To Party</button>`;
+ const tabs=[['Lead Details','Lead Details'],['Opportunities',`Opportunities (${os.length})`],['Contacts',`Contacts (${cs.length})`]];
+ let body;
+ if(t=='Lead Details')body=`<div class="hcard"><div class="avt">${r.name.slice(0,2).toUpperCase()}</div><div class="hm"><div class="hn"><h2>${r.name}</h2><span class="pill" style="background:${r.status=='Active'?'#4bb543':'#ee6b6b'}">${r.status}</span><span class="stc ${r.fav?'on':''}" onclick="favTog('${r.id}');render()">${r.fav?I.starF:I.star}</span></div><div class="hl">${I.bld}${r.loc}</div><div class="hl">${I.pin}${r.addr}</div></div><button class="ebtn" onclick="guard('${b}','Edit Lead')">Edit ${I.pen}</button></div>
+ <div class="cols2"><div class="info"><h3>Information</h3>${ir('Lead ID',r.id)}${ir('Party Role','Lead')}${ir('Industry','--')}${ir('Target Party Role',r.role)}${ir('Lead Temperature',r.temp?`<span class="hot">${flame} Hot</span>`:'--')}${ir('Source','Advertisement')}${ir('Converted Status','<span class="pill" style="background:#f5a53a;border-radius:6px">Pending</span>')}<hr class="hr"><h3>Primary Contact Details</h3>${ir('Contact Name',pc?pc.n:'--')}${ir('Contact No.',pc&&pc.phone!='--'?pc.phone:'--')}${ir('Email',pc?pc.email:'--')}${ir('Designation','--')}<hr class="hr"><h3>Service Interest</h3><div class="mut">--</div><hr class="hr"><h3>Networks</h3><div class="mut">--</div><hr class="hr"><h3>Additional information</h3></div>
+ <div class="rt"><div class="lt">Lead Stages</div>${pipe('pl1',STG_LEAD,r.stage,'Change Lead Stage',b)}${actPanel(feed,b,true)}</div></div>`;
+ else body=`<div class="ecard"><div class="erow"><div class="search" style="width:400px"><span>${I.search}</span><input placeholder="Search ${t}" value="${S.emb.q.replace(/"/g,'&quot;')}" oninput="embQ(this.value)"></div><span class="sp"></span>${t=='Opportunities'?`<span class="fb rng2">${I.cal}<span>9/27/2026 - 10/27/2026</span><span style="color:#999;font-size:10px">▼</span></span>`:''}<button class="cbtn" onclick="guard('${b}','${t=='Opportunities'?'Create Opportunity':'Create Contact'}')">${I.plus} ${t=='Opportunities'?'Create Opportunity':'Create Contact'}</button></div><div id="embtbl">${embInner()}</div></div>`;
+ return `${topbar('Leads','leads',right)}<div class="dtabs2">${tabs.map(x=>`<button class="${t==x[0]?'on':''}" onclick="S.det.tab='${x[0]}';S.emb={q:''};render()">${x[1]}</button>`).join('')}</div>${body}`}
+function leadToggle(id){const r=find('leads',id);if(guard(r.branch,r.status=='Active'?'Deactivate':'Activate')){r.status=r.status=='Active'?'Inactive':'Active';render()}}
+function oppDHTML(){
+ const r=find('opps',S.det.id),b=r.branch,addr=r.party=='Jorasako Estate'?'Lakeview Road, Kolkata, West Bengal, India':r.ploc;
+ const feed=S.data.acts.filter(x=>x.opp==r.n);
+ const rows=[['Direction','Export'],['Movement Type','Door to Door'],['Origin Country',dash(r.orig)],['Destination Country',dash(r.dest)],['Trade Lane',dash(r.lane)],['Incoterm','EXW'],['Recurring Type','Monthly'],['Estimated Volume','200 CBM'],['Estimated Shipment Date',fday(addDays(r.d,-2))],['Source','External Referral'],['Commodity Type','General']];
+ return `${topbar('Opportunities','opps')}<div class="hcard"><div class="hm"><div class="hn"><h2>${r.n}</h2></div><div class="hl">${I.bld}${r.party}</div><div class="hl">${I.pin}${addr}</div></div><div class="hbtns"><button class="ebtn" onclick="guard('${b}','Edit Opportunity')">Edit ${I.pen}</button><button class="abtn" data-pb onclick="oppMenu(event,'${b}')">Actions ⌄</button></div></div>
+ <div class="cols2"><div class="info"><h3>Information</h3>${ir('Estimated Start Date','--')}${ir('Estimated Closure',fday(r.closure))}${ir('Owner',r.owner)}${ir('Priority','<span class="pr">High</span>')}<hr class="hr"><h3>Service Type</h3><span class="tag">Inland Shipment</span><hr class="hr"><h3>Details</h3>${rows.map(x=>ir(x[0],x[1])).join('')}</div>
+ <div class="rt"><div class="lt">Opportunity Stages</div>${pipe('pl2',STG_OPP,r.stage,'Change Opportunity Stage',b)}${actPanel(feed,b,false)}</div></div>`}
+function oppMenu(e,b){showPop(e,`<div class="menu"><div onclick="oppAct('${b}','Create Inquiry')">Create Inquiry</div><div onclick="oppAct('${b}','Create Quotation')">Create Quotation</div></div>`)}
+function oppAct(b,l){S.pop=null;renderPop();guard(b,l)}
+/* ============ calendar ============ */
+function calAccess(){return S.user==2?['A']:(S.calAB?['A','B']:ORDER)}
+function ftime(dt){const d=new Date(dt+':00');let h=d.getHours();const ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${pad(d.getMinutes())}:00 ${ap}`}
+const CEV={Call:['#e1f0ee','#2f8f83','#2a7f74',I.phone],Email:['#e8e8fb','#6f6ef0','#4b4acb',I.mail],Meeting:['#def3f9','#37b6e0','#2f9fc4',I.user],Task:['#e0ecfa','#3b8fe0','#2f6fb8',I.task]};
+const CALU=[['me','My Activities'],...SUBS.map(n=>[n,n])];
+function calToggle(k){const a=S.calSel;if(k=='all')S.calSel=a.length==CALU.length?[]:CALU.map(x=>x[0]);else S.calSel=a.includes(k)?a.filter(x=>x!=k):[...a,k];render()}
+function calOpen(e){e.stopPropagation();S.calDD=!S.calDD;render()}
+function calHTML(){
+ const y=2026,m=S.calM,first=new Date(y,m,1),off=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate(),ac2=calAccess(),sel=S.calSel;
+ const evs=S.data.acts.filter(a=>ac2.includes(a.branch)&&((sel.includes('me')&&a.owner==ME)||sel.includes(a.owner)));
+ const total=Math.ceil((off+days)/7)*7;let cells=['MON','TUE','WED','THU','FRI','SAT','SUN'].map(d=>`<div class="cdn">${d}</div>`).join('');
+ for(let i=0;i<total;i++){const dt=new Date(y,m,i-off+1),inM=dt.getMonth()==first.getMonth(),iso=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+  const day=evs.filter(e=>e.dt.slice(0,10)==iso).sort((x,z)=>x.dt.localeCompare(z.dt)),exp=S.calExp[iso],show=day.length>3&&!exp?day.slice(0,2):day;
+  cells+=`<div class="dc2 ${inM?'':'out'}"><span class="dnum ${iso=='2026-10-27'?'today':''}">${dt.getDate()}</span>${show.map(e=>{const c=CEV[e.type];return `<div class="ev2" style="background:${c[0]};border-left-color:${c[1]};color:${c[2]}" onclick="doAct('act','${e.id}','View',true)">${c[3]}<span>${ftime(e.dt)} - ${e.title}</span></div>`}).join('')}${day.length>3&&!exp?`<div class="ev2 more" onclick="S.calExp['${iso}']=1;render()">+${day.length-2} more</div>`:''}</div>`}
+ const chips=sel.length==0?'':sel.map(k=>`<span class="cchip">${CALU.find(x=>x[0]==k)[1]}<b onclick="calToggle('${k}')">×</b></span>`).join('');
+ const allOn=sel.length==CALU.length;
+ const dd=S.calDD?`<div class="cdd"><div class="co sm" onclick="calToggle('all')"><span class="cb ${allOn?'on':''}"></span>Select All</div>${CALU.map(x=>`<div class="co" onclick="calToggle('${x[0]}')"><span class="cb ${sel.includes(x[0])?'on':''}"></span>${x[1]}</div>`).join('')}</div>`:'';
+ return `<div class="ph cph"><div class="cll"><h1>Calendar</h1><button class="btn2 td" onclick="S.calM=9;render()">Today</button><button class="btn2 nv2" onclick="S.calM--;render()">${I.chL}</button><button class="btn2 nv2" onclick="S.calM++;render()">${I.chR}</button><b class="cm">${MN[first.getMonth()]} ${first.getFullYear()}</b></div>
+ <div class="cr2"><div class="cf" id="caldd" onclick="calOpen(event)"><div class="cfi">${chips}</div>${sel.length?`<span class="cx2" onclick="event.stopPropagation();S.calSel=[];render()">✕</span>`:''}<span class="cv">▾</span>${dd}</div><select class="msel"><option>Month</option></select><button class="cbtn">${I.plus} Create Activity</button></div></div>
+ <div class="cgrid">${cells}</div>`}
+/* ============ settings ============ */
+const SD1='Tuesday, September 8, 2026 at 9:53:00 AM GMT+06:00',SD2='Friday, October 9, 2026 at 11:48:00 AM GMT+06:00',SD3='Friday, October 23, 2026 at 3:31:00 PM GMT+06:00',SD4='Friday, October 23, 2026 at 3:32:00 PM GMT+06:00',SD5='Friday, October 23, 2026 at 3:33:00 PM GMT+06:00',SD6='Tuesday, September 22, 2026 at 3:12:00 PM GMT+06:00',SD7='Tuesday, September 22, 2026 at 3:13:00 PM GMT+06:00',SD8='Tuesday, September 22, 2026 at 1:26:00 PM GMT+06:00',SD9='Tuesday, September 22, 2026 at 1:27:00 PM GMT+06:00',SD10='Tuesday, September 22, 2026 at 1:28:00 PM GMT+06:00';
+const SET={
+ 'Lead Stage':{ph:'Search Lead Stages',cr:'Create Lead Stage',rows:[[1,'New','Indigo Blue','#3b3bc4',1,SD1,SD2],[2,'Contacted','Cyan Blue','#4aa8d8',0,SD1,SD2],[3,'Lost','Coral Red','#e8736f',0,SD1,SD2],[4,'Proposal Sent','Amber','#e8a23a',0,SD1,SD2],[5,'Qualified','Teal Green','#4db38a',0,SD1,SD2],[7,'Negotiation','Deep Orange','#e0622f',0,SD1,SD2],[8,'Converted','Grass Green','#58bb3a',0,SD1,SD2],[9,'On Hold','Amber','#e8a23a',0,SD3,'--'],[10,'Prospect','Pastel Green','#8fd98b',0,SD4,'--']]},
+ 'Opportunity Stage':{ph:'Search Opportunity Stages',cr:'Create Opportunity Stage',rows:[[1,'New','Indigo Blue','#3b3bc4',1,SD1,'--'],[2,'Qualifications','Cyan Blue','#4aa8d8',0,SD1,'--'],[3,'Proposal Sent','Teal Green','#4db38a',0,SD1,'--'],[4,'Negotiation','Amber','#e8a23a',0,SD1,'--'],[5,'Won','Grass Green','#58bb3a',0,SD1,'--'],[6,'Lost','Coral Red','#e8736f',0,SD1,'--'],[7,'Test','Red','#ec6b6b',0,SD6,SD7],[8,'Pending','Gold','#f4c242',0,SD4,'--'],[9,'On Hold','Burnt Orange','#b84a20',0,SD5,'--']]},
+ 'Activity Status':{ph:'Search Activity Statuses',cr:'Create Activity Status',rows:[[1,'New','Indigo Blue','#3b3bc4',0,SD1,SD8],[2,'In Progress','Teal Green','#4db38a',1,SD1,SD8],[3,'Follow Up','Amber','#e8a23a',0,SD1,'--'],[4,'Completed','Grass Green','#58bb3a',0,SD1,'--'],[5,'Rescheduled','Slate Gray','#6b7280',0,SD1,'--'],[6,'Cancelled','Coral Red','#e8736f',0,SD1,'--'],[7,'Overdue','Deep Orange','#e0622f',0,SD1,'--'],[8,'Test','Coral Red','#e8736f',0,SD9,SD10],[9,'Pending','Slate Gray','#6b7280',0,SD5,'--']]}};
+const grip='<svg class="ico" viewBox="0 0 24 24" fill="#7b8294"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+function settingsHTML(){
+ const t=S.setTab,tabs=['Lead Stage','Opportunity Stage','Activity Status','Activity Reminder'];
+ let body;
+ const th=(h,f)=>`<th><span class="th">${h}${f?`<span class="fi">${I.filter}</span>`:''}</span></th>`;
+ if(t=='Activity Reminder')body=`<div class="card"><div class="tw"><table class="t" style="min-width:900px"><thead><tr><th style="width:54px"></th>${th('Activity Type',1)}${th('Default Reminder',1)}${th('Modified By',1)}${th('Last Modified',1)}</tr></thead><tbody>${[['Call','5 Minutes','Rafia Khan','Friday, September 25, 2026 at 9:30:00 PM GMT+06:00'],['Email','No Reminder','--','--'],['Meeting','No Reminder','--','--'],['Task','No Reminder','--','--']].map(r=>`<tr><td><span class="rb">${I.dots}</span></td><td><b style="display:inline">${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')}</tbody></table></div></div>`;
+ else{const d=SET[t];body=`<div class="card"><div class="frow"><div class="search"><span>${I.search}</span><input placeholder="${d.ph}"></div><span class="sp"></span><button class="cbtn">${I.plus} ${d.cr}</button></div><div class="tw"><table class="t" style="min-width:1250px"><thead><tr><th style="width:40px"></th><th style="width:54px"><span>${I.cols}</span></th><th>Order</th>${th('Name',1)}${th('Colour',1)}${th('Status',1)}${th('Default',1)}${th('Created Date',1)}${th('Last Modified',1)}</tr></thead><tbody>${d.rows.map(r=>`<tr><td>${grip}</td><td><span class="rb">${I.dots}</span></td><td>${r[0]}</td><td><b>${r[1]}</b></td><td><span class="sw" style="background:${r[3]}"></span>${r[2]}</td><td><span class="pill" style="background:#4bb543">Active</span></td><td><span class="cb ${r[4]?'on':''}"></span></td><td>${r[5]}</td><td>${r[6]}</td></tr>`).join('')}</tbody></table></div></div>`}
+ return `<div class="ph"><h1>Settings ${dp()}</h1></div><div class="stabs">${tabs.map(x=>`<button class="${t==x?'on':''}" onclick="S.setTab='${x}';render()">${x}</button>`).join('')}</div>${body}`}
+/* ============ app / controls / guide ============ */
+function appHTML(){
+ if(S.screen=='cal')return calHTML();
+ if(S.screen=='settings')return settingsHTML();
+ if(S.screen=='leadD')return leadDHTML();
+ if(S.screen=='oppD')return oppDHTML();
+ return listHTML(S.screen)}
+function ctlHTML(){
+ return `<span class="lbl">Prototype controls</span>
+ <span class="seg"><button class="${S.user==1?'on':''}" onclick="setUser(1)">User 1: Multi-branch manager</button><button class="${S.user==2?'on':''}" onclick="setUser(2)">User 2: Single-branch user</button></span>
+ <span>Logged in to <select ${S.user==2?'disabled':''} onchange="setLB(this.value)" style="font-size:12px;padding:3px 6px;border-radius:5px;max-width:230px">${ORDER.map(b=>`<option value="${b}" ${S.lb==b?'selected':''}>${b} – ${brName(b)}</option>`).join('')}</select></span>
+ <button class="btn pri" onclick="S.guide=true;renderGuide()">Scenario guide</button>
+ <label><input type="checkbox" ${S.roleOff?'checked':''} onchange="S.roleOff=this.checked;render()"> Branch A Role: Update on Sales Tasks &amp; Activity unchecked</label>
+ <label><input type="checkbox" ${S.calAB?'checked':''} onchange="S.calAB=this.checked;render()"> Calendar access: Branch A and B only</label>
+ <button class="btn" onclick="init();render();renderGuide()">Reset prototype</button>`}
+function setUser(u){S.user=u;S.lb='A';resetLists();S.screen=S.screen;render()}
+function setLB(b){S.lb=b;resetLists();if(S.screen=='leadD'||S.screen=='oppD')S.screen='leads';S.det=null;render()}
+function render(){
+  $('ctl').innerHTML=ctlHTML();$('side').className=(S.screen=='leadD'||S.screen=='oppD'?'hide':'')+(S.sideOpen?' open':'');$('side').innerHTML=sideHTML();document.body.classList.toggle('det',S.screen=='leadD'||S.screen=='oppD');$('main').innerHTML='<button class="ham" onclick="S.sideOpen=!S.sideOpen;render()">≡</button>'+appHTML();$('drawer').innerHTML=drawerHTML();
+ const n=$('note');if(S.note){n.style.display='flex';n.innerHTML=`<span><b>${S.note.id}</b>${S.note.text}</span><button onclick="S.note=null;render()">✕</button>`}else n.style.display='none';
+ if(S.bf.open){const i=$('bfinput');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}}
+}
+const SC=[
+ {id:'S1',t:'Placement on four listings',s:()=>{S.screen='leads'},i:'Open Leads, Contacts, Opportunities, Activities from the left menu. The Branch filter sits after Search; no label, no icon. Switch to User 2: the filter disappears.'},
+ {id:'S2',t:'Dropdown, Select All, chips, "+N", tooltip, click targets',s:()=>{S.screen='leads';S.L.leads.sel=['A','B','C','D','E']},i:'Five branches are selected: "Royal Logistics +4". Open the dropdown (click chip, badge, empty area or arrow): 10 branches, the list scrolls and Select All stays on top. Try Select All (all 10 checked), untick one (Select All unchecked), type a name, city or country (no match shows "No options found"), hover "+4" for the tooltip, Esc / outside click closes. Note: "first chip" follows the A to J list order (assumption).'},
+ {id:'S3',t:'Clearing: chip ×, dropdown, Clear All, placeholder, empty state',s:()=>{S.screen='leads';S.L.leads.sel=['A','B','C']},i:'Click the chip ×; untick in the dropdown; click Clear All ✕. With nothing selected see "Select Branch", "No Data Found", "0 of 0".'},
+ {id:'S4',t:'Default, reset on leaving, single-branch user',s:()=>{S.screen='leads';S.L.leads.sel=['A','B']},i:'Open any Lead then press back, or click another menu: selection returns to the logged-in branch. Switch the logged-in branch (User 1) or switch to User 2.'},
+ {id:'S5',t:'Filter interaction',s:()=>{S.screen='leads';const L=S.L.leads;L.sel=['A','B'];L.q='a';L.cf={stage:'New'};L.sort={k:'company',dir:'asc'};L.fav=true;L.range=0},i:'Search text, a column filter, sort and Show Favorite are preset. Change the branch: filters, search and Show Favorite clear; sort and date range stay; page goes to 1. Also try on Activities (tab returns to All Activities). Changing Date Range or All/My leaves the Branch filter alone.'},
+ {id:'S6',t:'Records listed per branch (Company-level Party Visibility)',s:()=>{S.screen='leads';S.L.leads.sel=[...ORDER]},i:'All 10 branches are selected. Leads of every selected branch show regardless of Party Visibility. There is no Party Visibility control. Lead Details, Opportunity Details and Calendar have no Branch filter.'},
+ {id:'S7',t:'Branch column',s:()=>{S.screen='leads';S.L.leads.sel=['A','B']},i:'Branch column shows with 2+ branches (before Lead ID). Open Column Settings (grid icon): hide it, drag it, filter it, sort it. Reduce to 1 branch and back to 2+: it reappears, position remembered. Note: hiding it also clears its sort (assumption).'},
+ {id:'S8',t:'View-only: Leads and Lead Details',s:()=>{S.screen='leads';S.L.leads.sel=['A','B']},i:'Use the ⋮ menu on a Branch B Lead (Jorasako Estate): Edit/Deactivate blocked, View and star work. Open it: Edit, Deactivate, Convert To Party, stage click and every Add New / Create are blocked; the three the Contacts tab (Create Contact, Edit, Delete, Mark as Primary blocked; View opens the View Contact drawer), tabs, activity sub-tabs, View Activity, Preview/Download File and the star work.'},
+ {id:'S9',t:'View-only: Contacts, Opportunities, Opportunity Details',s:()=>{S.screen='contacts';S.L.contacts.sel=['A','B']},i:'Contacts: Edit/Delete on a Branch B contact (row menu) are blocked, View works; the View Contact drawer has Edit only (as in the screenshot). Create Contact on the listing is not blocked. Then Opportunities (Branch B) and open one: Edit, stage click, Actions, Add New, Add Note are blocked. Note: the brief lists the role toggle under S9 but its behaviour (permission message) is described under S10, so it is exercised in S10.'},
+ {id:'S10',t:'View-only: Activities, drawer, Lead and Opportunity mixes, permission message',s:()=>{S.screen='acts';S.L.acts.sel=['A','B']},i:'Activities: Edit/Delete/Duplicate on a Branch B activity are blocked; open its View drawer (Opportunity read-only). Open Lead "Alpha Freight" (A): the Opportunities tab shows an A and a B opportunity (B is view-only), the Activities feed shows A and B activities, and the Lead actions work. Open Opportunity "Q3 Freight Contract" (B): its Branch A activity "Meeting with McLaren" is also view-only there (activities on Opportunity Details follow the Opportunity branch, also in the View drawer). Open "SIN-NYC Air Freight" (A): its Branch B activity "Email to Meridian Freight" can be edited. Turn on the role toggle: Edit on a Branch B Activity shows the permission message, not the toast. Note: the toggle is applied to Activity Edit only.'},
+  {id:'S11',t:'Calendar',s:()=>{S.screen='cal';S.calAB=true},i:'No Branch filter. The calendar shows your activities and your subordinates\' activities of the branches you have access to (the toggle sets A and B): Branch C and D events do not show. Click a Branch B event: the View Call Log drawer opens, View works, Edit and Delete show the toast; a Branch A event works. Turn the calendar toggle off to see every accessible branch, including Branch C and D events. Note: the screenshot default of the user filter is "My Activities" only; here it is preselected with Select All so AC-7.2 (subordinate activity shows) holds on load.'}];
+function loadSc(i){const s=SC[i];S.user=1;S.lb='A';resetLists();S.det=null;S.drawer=null;s.s();S.note={id:s.id+' '+s.t+': ',text:s.i};S.guide=true;render();renderGuide()}
+function renderGuide(){$('guide').innerHTML=S.guide?`<div class="gp"><div class="gh"><b>Scenario guide</b><button class="xb" style="color:#fff" onclick="S.guide=false;renderGuide()">✕</button></div><div class="gb">${SC.map((s,i)=>`<div class="sc"><h4>${s.id} ${s.t}</h4><p>${s.i}</p><button class="btn2 p" onclick="loadSc(${i})">Load scenario</button></div>`).join('')}</div></div>`:''}
+/* ============ global events ============ */
+document.addEventListener('click',e=>{
+ let ch=false;
+ if(S.bf.open&&!e.target.closest('#bfwrap')){S.bf.open=null;S.bf.q='';ch=true}
+ if(S.pop&&!e.target.closest('#pop')){S.pop=null;renderPop()}
+ if(S.calDD&&!e.target.closest('#caldd')){S.calDD=false;ch=true}
+ if(ch)render()});
+document.addEventListener('keydown',e=>{if(e.key=='Escape'){if(S.bf.open){S.bf.open=null;S.bf.q='';render()}S.pop=null;renderPop()}});
+init();render();
+</script>
+</body>
+</html>
